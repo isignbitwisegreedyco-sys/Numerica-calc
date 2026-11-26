@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Numerica Calc — Precision Workbench</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230f172a'/%3E%3Cpath d='M13 6v28M27 6v28M6 13h28M6 27h28' stroke='%23ffffff' stroke-opacity='0.14' stroke-width='1'/%3E%3Cpath d='M11 30V10h4.2l9.6 13.4V10H29v20h-4.2L15.2 16.6V30H11z' fill='%23ffffff'/%3E%3Cpath d='M25.5 23.5h7M29 20v7' stroke='%232563eb' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --muted-bg: #f8fafc;
+      --hover-bg: #f1f5f9;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --ink: #0f172a;
+      --muted: #475569;
+      --subtle: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --accent-border: #bfdbfe;
+      --live: #10b981;
+      --warn-bg: #fffbeb;
+      --warn-border: #fde68a;
+      --warn-ink: #92400e;
+      --error: #dc2626;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --star: #d97706;
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 16px;
+      --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+      --shadow-lg: 0 20px 44px rgba(15, 23, 42, 0.16);
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-family: var(--sans); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); overflow-x: clip; line-height: 1.5; }
+    .hidden { display: none !important; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    output, input[type="number"], .mono, .num { font-variant-numeric: tabular-nums; }
+
+    .err-banner {
+      max-width: 1240px; margin: 12px auto 0; padding: 12px 16px; border-radius: var(--r-md);
+      background: var(--error-bg); border: 1px solid var(--error-border); color: var(--error);
+      font-size: 13.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+
+    /* Sticky Topbar */
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      max-width: 1240px; margin: 0 auto; padding: 10px 20px;
+      display: grid; grid-template-columns: auto minmax(0, 480px) auto; align-items: center; gap: 14px;
+    }
+    .brand {
+      display: inline-flex; align-items: center; gap: 10px; background: none; border: 0;
+      padding: 0; text-align: left; cursor: pointer; color: var(--ink); font-family: inherit;
+    }
+    .brand-mark {
+      width: 36px; height: 36px; border-radius: 9px;
+      display: grid; place-items: center; flex-shrink: 0; overflow: hidden;
+      box-shadow: var(--shadow-xs);
+    }
+    .brand-mark svg { width: 36px; height: 36px; display: block; }
+    .brand-copy { display: flex; flex-direction: column; line-height: 1.15; }
+    .brand-copy strong { font-size: 15.5px; letter-spacing: -0.02em; }
+    .brand-copy span { font-size: 11px; color: var(--subtle); }
+
+    .search-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+    .search-icon { position: absolute; left: 11px; width: 15px; height: 15px; color: var(--subtle); pointer-events: none; }
+    #toolSearch {
+      width: 100%; height: 38px; padding: 0 52px 0 34px; border-radius: 10px;
+      border: 1px solid var(--border-strong); background: var(--muted-bg); color: var(--ink);
+      font-family: inherit; font-size: 13.5px;
+    }
+    #toolSearch:focus { outline: none; background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14); }
+    .search-kbd {
+      position: absolute; right: 9px; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--subtle); font-family: var(--mono); font-size: 10.5px; font-weight: 600; pointer-events: none;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 36px; padding: 0 13px; border-radius: 9px; border: 1px solid var(--border-strong);
+      background: var(--surface); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: all 0.14s ease;
+    }
+    .btn:hover:not(:disabled) { background: var(--hover-bg); }
+    .btn:disabled { opacity: 0.42; cursor: not-allowed; }
+    .btn-primary, .btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-soft { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-hover); }
+    .btn-soft:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-text { border-color: transparent; background: transparent; color: var(--accent); height: auto; padding: 5px 9px; }
+    .btn-text:hover:not(:disabled) { background: var(--accent-soft); }
+    .btn-icon { width: 34px; height: 34px; padding: 0; font-size: 15px; }
+
+    /* Always-Visible Category Bar + Hover/Swipe Overlay */
+    .cat-shell { position: relative; z-index: 45; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .cat-inner {
+      max-width: 1240px; margin: 0 auto; padding: 8px 20px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    }
+    #categoryNav { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; flex: 1 1 auto; }
+    .cat-tab {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--muted-bg); color: var(--muted);
+      font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.14s ease;
+    }
+    .cat-tab:hover { background: var(--accent-soft); color: var(--accent-hover); border-color: var(--accent-border); }
+    .cat-tab[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .cat-tab-all { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-hover); }
+    .cat-tab-all:hover, .cat-tab-all[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .cat-count {
+      font-family: var(--mono); font-size: 10.5px; padding: 1px 6px; border-radius: 999px;
+      background: rgba(17, 24, 39, 0.08);
+    }
+    .cat-tab[aria-pressed="true"] .cat-count, .cat-tab-all:hover .cat-count { background: rgba(255, 255, 255, 0.22); }
+    .cat-chev { font-size: 10px; opacity: 0.7; transition: transform 0.15s ease; }
+    .cat-tab[aria-expanded="true"] .cat-chev { transform: rotate(180deg); }
+    .cat-hint { font-family: var(--mono); font-size: 11px; color: var(--subtle); }
+
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 40; background: rgba(17, 24, 39, 0.22);
+      backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.18s ease;
+    }
+    .drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+    .drawer-backdrop.is-pinned { opacity: 0; pointer-events: none; }
+
+    .drawer-anchor { position: relative; max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+    .tool-drawer {
+      position: absolute; top: 8px; left: 20px; right: 20px; z-index: 48;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid var(--border-strong);
+      border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
+      opacity: 0; transform: translateY(-8px); pointer-events: none; visibility: hidden;
+      transition: opacity 0.18s ease, transform 0.2s ease, visibility 0.2s; overflow: hidden;
+    }
+    .tool-drawer.is-open { opacity: 1; transform: translateY(0); pointer-events: auto; visibility: visible; }
+    .tool-drawer.is-pinned { position: relative; top: 0; left: 0; right: 0; margin: 10px 0 4px; box-shadow: var(--shadow-sm); }
+
+    .drawer-head {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--muted-bg);
+    }
+    .drawer-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+    .drawer-head p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+    .drawer-ctrls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+    .drawer-viewport { overflow-x: hidden; overflow-y: auto; max-height: min(65vh, 520px); touch-action: pan-y; cursor: grab; }
+    .tool-drawer.is-pinned .drawer-viewport { max-height: none; overflow-y: visible; }
+    .drawer-track { display: flex; width: 100%; transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+    .drawer-track.is-dragging { transition: none; cursor: grabbing; }
+    .drawer-slide { flex: 0 0 100%; width: 100%; padding: 14px 16px 16px; min-width: 0; }
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 9px; }
+    .all-sections { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 16px; }
+    .all-group-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+    .all-group-head h3 { margin: 0; font-size: 13px; font-weight: 700; }
+    .all-group-head span { font-family: var(--mono); font-size: 11px; color: var(--subtle); }
+
+    .drawer-foot {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+      padding: 9px 16px; border-top: 1px solid var(--border); background: var(--muted-bg);
+    }
+    .drawer-dots { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+    .drawer-dot {
+      padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+      color: var(--muted); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .drawer-dot.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .drawer-hint { margin: 0; font-family: var(--mono); font-size: 11px; color: var(--subtle); }
+
+    .tool-card {
+      position: relative; display: flex; background: var(--muted-bg); border: 1px solid var(--border);
+      border-radius: var(--r-md); min-width: 0; transition: all 0.14s ease;
+    }
+    .tool-card:hover { background: var(--surface); border-color: var(--border-strong); box-shadow: var(--shadow-xs); }
+    .tool-card.is-current { background: var(--accent-soft); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .tool-card-open {
+      flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 9px; padding: 10px 32px 10px 10px;
+      background: none; border: 0; text-align: left; cursor: pointer; color: inherit; font-family: inherit;
+    }
+    .tool-code {
+      width: 30px; height: 30px; flex-shrink: 0; display: grid; place-items: center; border-radius: 7px;
+      background: var(--surface); border: 1px solid var(--border); font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--muted);
+    }
+    .tool-card.is-current .tool-code { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tool-card-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .tool-card-copy strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tool-card-copy span { font-size: 11.5px; color: var(--muted); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tool-fav {
+      position: absolute; top: 5px; right: 5px; width: 26px; height: 26px; display: grid; place-items: center;
+      border: 0; border-radius: 6px; background: transparent; color: var(--subtle); font-size: 14px; cursor: pointer;
+    }
+    .tool-fav:hover, .tool-fav[aria-pressed="true"] { color: var(--star); }
+
+    /* Main Workbench */
+    .shell { max-width: 1240px; margin: 0 auto; padding: 18px 20px 52px; display: flex; flex-direction: column; gap: 16px; }
+    .header-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+      padding: 15px 18px; box-shadow: var(--shadow-xs); display: flex; flex-direction: column; gap: 10px;
+    }
+    .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft);
+      border: 1px solid var(--accent-border); color: var(--accent-hover); font-family: var(--mono);
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    #toolTitle { margin: 4px 0 2px; font-size: clamp(1.3rem, 2.2vw, 1.65rem); font-weight: 700; letter-spacing: -0.02em; }
+    #toolDescription { margin: 0; font-size: 13.5px; color: var(--muted); }
+    .recent-bar {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+      padding-top: 9px; border-top: 1px solid var(--border);
+    }
+    .recent-group { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+    .recent-label { font-family: var(--mono); font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--subtle); }
+    #recentTools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .recent-btn {
+      padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--muted-bg);
+      color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .recent-btn:hover { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-hover); }
+    .empty-note { margin: 0; font-size: 12.5px; color: var(--subtle); }
+
+    /* Workspace Grid & Panels */
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .panel-full { grid-column: 1 / -1; }
+    .panel-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+      padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--muted-bg);
+    }
+    .panel-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+    .panel-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+    .panel-code {
+      padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface);
+      font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--subtle); flex-shrink: 0;
+    }
+    .panel-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 13px; }
+    .panel-body p { margin: 0; font-size: 13.5px; color: var(--muted); }
+    .explain { font-size: 12.5px !important; color: var(--subtle) !important; padding-top: 8px; border-top: 1px solid var(--border); }
+
+    /* Inputs & Results */
+    .conv-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: end; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+    .span-full { grid-column: 1 / -1; }
+    label { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .flabel { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .fhelp { font-size: 11.5px; color: var(--subtle); }
+    .inp, .sel {
+      width: 100%; height: 40px; padding: 0 11px; border-radius: 9px;
+      border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink);
+      font-family: inherit; font-size: 13.5px;
+    }
+    .inp.num { font-family: var(--mono); font-weight: 600; }
+    .inp[readonly] { background: var(--muted-bg); color: var(--accent-hover); }
+    .inp:focus, .sel:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14); }
+    .sel:disabled { opacity: 0.55; background: var(--hover-bg); cursor: not-allowed; }
+    .swap-btn {
+      width: 40px; height: 40px; align-self: center; margin-top: 18px; border-radius: 9px;
+      border: 1px solid var(--border-strong); background: var(--muted-bg); color: var(--ink);
+      font-size: 17px; cursor: pointer; display: grid; place-items: center;
+    }
+    .swap-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .result-box {
+      padding: 14px 16px; border-radius: var(--r-md); background: var(--accent-soft);
+      border: 1px solid var(--accent-border); display: flex; flex-direction: column; gap: 5px;
+    }
+    .result-box-row {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      padding: 14px 16px; border-radius: var(--r-md); background: var(--accent-soft); border: 1px solid var(--accent-border);
+    }
+    .rlabel { font-family: var(--mono); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); }
+    .rval { font-family: var(--mono); font-size: clamp(1.25rem, 2.4vw, 1.65rem); font-weight: 700; color: var(--ink); word-break: break-word; }
+    .stat-card {
+      padding: 11px 13px; border-radius: 10px; background: var(--muted-bg); border: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .stat-card.is-primary { background: var(--accent-soft); border-color: var(--accent-border); }
+    .stat-card span { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--subtle); }
+    .stat-card.is-primary span { color: var(--accent); }
+    .stat-card strong { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--ink); }
+    .stat-card small { font-size: 11.5px; color: var(--muted); }
+    .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+    .formula {
+      margin: 0; padding: 10px 13px; border-radius: 9px; background: var(--muted-bg); border: 1px solid var(--border);
+      font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 9px;
+    }
+    .formula strong { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; color: var(--ink); }
+    .formula span { font-family: var(--mono); font-size: 12px; color: var(--ink); word-break: break-word; }
+    .formula[role="alert"] { background: var(--error-bg); border-color: var(--error-border); color: var(--error); font-weight: 600; }
+
+    /* Calculator */
+    .calc-screen {
+      padding: 16px 18px; background: #111827; color: #fff; border-radius: var(--r-md);
+      display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; min-height: 98px; gap: 4px;
+    }
+    .calc-expr { margin: 0; min-height: 18px; font-family: var(--mono); font-size: 13px; color: #9ca3af; word-break: break-all; }
+    #calculatorDisplay { font-family: var(--mono); font-size: clamp(1.9rem, 3.8vw, 2.5rem); font-weight: 600; line-height: 1.1; word-break: break-all; }
+    .calc-pad {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px;
+      background: var(--muted-bg); border: 1px solid var(--border); border-radius: var(--r-md);
+    }
+    .calc-tools { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .ckey {
+      height: 50px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink);
+      font-family: var(--mono); font-size: 17px; font-weight: 600; cursor: pointer; user-select: none;
+    }
+    .ckey:hover { background: var(--hover-bg); }
+    .ckey.util { background: #f3f4f6; color: var(--muted); font-size: 14px; }
+    .ckey.op { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); font-size: 19px; }
+    .ckey.op[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .ckey.zero { grid-column: span 2; }
+    .ckey.eq { background: var(--accent); border-color: var(--accent-hover); color: #fff; font-size: 20px; }
+
+    /* Working, Challenge, Tables, Charts, Mode Switch */
+    .work-toggle {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 13px;
+      border-radius: 9px; border: 1px solid var(--border); background: var(--muted-bg); color: var(--ink);
+      font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .work-content { display: none; padding: 11px 13px; border-radius: 9px; background: var(--muted-bg); border: 1px solid var(--border); font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--muted); }
+    .work-content.is-open { display: block; }
+    .challenge { padding: 13px 15px; border-radius: var(--r-md); background: var(--accent-soft); border: 1px solid var(--accent-border); display: flex; flex-direction: column; gap: 7px; }
+    .challenge strong { font-family: var(--mono); font-size: 15px; color: var(--ink); }
+    .challenge-ans { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--live); }
+
+    .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-md); }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.tbl th { text-align: left; padding: 9px 11px; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; color: var(--subtle); background: var(--muted-bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.tbl td { padding: 9px 11px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.tbl tbody tr:last-child td { border-bottom: 0; }
+    table.tbl tbody tr.is-matched { background: var(--accent-soft); font-weight: 700; color: var(--accent-hover); }
+
+    .status-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 9px 12px; border-radius: 9px; background: var(--muted-bg); border: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--subtle); flex-shrink: 0; }
+    .dot.is-live { background: var(--live); }
+    .dot.is-err { background: var(--error); }
+
+    .chart-fig { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .chart-fig svg { width: 100%; height: auto; display: block; background: var(--muted-bg); border: 1px solid var(--border); border-radius: var(--r-md); padding: 6px; }
+    .chart-grid { stroke: #e5e7eb; stroke-width: 1; }
+    .chart-lbl { fill: #6b7280; font-family: var(--mono); font-size: 10px; }
+    .chart-line { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+    .chart-pt { fill: var(--accent); stroke: #fff; stroke-width: 1.5; }
+    .chart-cap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-family: var(--mono); font-size: 12.5px; font-weight: 600; }
+
+    .mode-switch { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 4px; background: var(--muted-bg); border: 1px solid var(--border); border-radius: 10px; }
+    .mode-btn { padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+    .mode-btn[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-xs); }
+    .fit-alert { padding: 11px 13px; border-radius: 9px; background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink); font-size: 12.5px; }
+
+    /* Binary Computational Calculator */
+    .bin-flags { display: flex; flex-wrap: wrap; gap: 7px; }
+    .bin-flag {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--muted-bg); color: var(--subtle);
+      font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    }
+    .bin-flag .fdot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); }
+    .bin-flag.is-on { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-hover); }
+    .bin-flag.is-on .fdot { background: var(--accent); }
+    .bin-flag.is-warn.is-on { background: var(--warn-bg); border-color: var(--warn-border); color: var(--warn-ink); }
+    .bin-flag.is-warn.is-on .fdot { background: var(--star); }
+
+    .bin-align {
+      padding: 12px 14px; border-radius: var(--r-md); background: #111827; color: #f9fafb;
+      font-family: var(--mono); font-size: 13px; line-height: 1.65; overflow-x: auto;
+    }
+    .bin-align-row { display: flex; justify-content: space-between; gap: 16px; white-space: pre; }
+    .bin-align-lbl { color: #9ca3af; font-size: 11.5px; }
+    .bin-align-bits { letter-spacing: 0.05em; }
+    .bin-align-sep { border: 0; border-top: 1px solid #374151; margin: 5px 0; }
+    .bin-align-res { color: #93c5fd; font-weight: 700; }
+
+    .bit-pad {
+      display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px;
+    }
+    .bit-tile {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      padding: 7px 4px; border-radius: 9px; border: 1px solid var(--border-strong);
+      background: var(--muted-bg); color: var(--ink); cursor: pointer; font-family: var(--mono);
+      transition: all 0.12s ease;
+    }
+    .bit-tile:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .bit-tile.is-on { background: var(--accent); border-color: var(--accent-hover); color: #fff; }
+    .bit-idx { font-size: 9.5px; opacity: 0.7; }
+    .bit-val { font-size: 16px; font-weight: 700; line-height: 1.1; }
+    .bit-wt { font-size: 9.5px; opacity: 0.75; }
+    @media (max-width: 640px) { .bit-pad { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+    .list-item {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      padding: 11px 13px; background: var(--muted-bg); border: 1px solid var(--border); border-radius: var(--r-md);
+    }
+    .dl-list { margin: 0; border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+    .dl-list > div { display: flex; justify-content: space-between; gap: 10px; padding: 9px 13px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .dl-list > div:last-child { border-bottom: 0; }
+    .dl-list dt { color: var(--muted); }
+    .dl-list dd { margin: 0; font-family: var(--mono); font-weight: 600; }
+
+    .footer { max-width: 1240px; margin: 0 auto; padding: 16px 20px 30px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--subtle); }
+    .toast {
+      position: fixed; right: 18px; bottom: 18px; z-index: 60; max-width: min(340px, calc(100vw - 36px));
+      padding: 11px 15px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 13px;
+      box-shadow: var(--shadow-lg); opacity: 0; transform: translateY(10px); pointer-events: none; transition: all 0.18s ease;
+    }
+    .toast.is-visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 940px) { .workspace { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      .topbar-inner { grid-template-columns: 1fr auto; padding: 10px 14px; }
+      .search-wrap { grid-column: 1 / -1; order: 3; }
+      .cat-inner, .drawer-anchor { padding-left: 14px; padding-right: 14px; }
+      .tool-drawer { left: 14px; right: 14px; }
+      .cat-hint { display: none; }
+      .shell { padding: 14px 14px 40px; }
+      .conv-row, .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .swap-btn { margin-top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="runtimeErrorBanner" class="err-banner hidden" role="alert">
+    <span id="runtimeErrorText"></span>
+    <button type="button" class="btn" id="dismissRuntimeError">Dismiss</button>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button id="brandHome" class="brand" type="button" aria-label="Numerica Calc Home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="9" fill="#0f172a"/>
+            <path d="M13.5 5v30M26.5 5v30M5 13.5h30M5 26.5h30" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1"/>
+            <path d="M11 30V10h4.2l9.6 13.4V10H29v20h-4.2L15.2 16.6V30H11z" fill="#ffffff"/>
+            <rect x="23" y="21" width="12" height="12" rx="3" fill="#0f172a"/>
+            <path d="M25.5 27h7M29 23.5v7" stroke="#2563eb" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="brand-copy"><strong>Numerica Calc</strong><span>Precision Workbench · 35 Tools</span></span>
+      </button>
+
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input id="toolSearch" type="search" placeholder="Search all 35 calculators, converters & sizing tools…" autocomplete="off" aria-label="Search tools">
+        <kbd class="search-kbd" aria-hidden="true">⌘K</kbd>
+      </div>
+
+      <button id="browseAllButton" class="btn" type="button" aria-expanded="false" aria-controls="toolDrawer">⊞ All Tools (35)</button>
+    </div>
+
+    <div id="categoryBarShell" class="cat-shell">
+      <div class="cat-inner">
+        <nav id="categoryNav" aria-label="Tool categories"></nav>
+        <span class="cat-hint" aria-hidden="true">Hover or tap category · Swipe inside</span>
+      </div>
+
+      <div class="drawer-anchor">
+        <section id="toolDrawer" class="tool-drawer" role="region" aria-label="Tools overlay menu" aria-hidden="true">
+          <div class="drawer-head">
+            <div>
+              <h2 id="categoryTitle">Everyday</h2>
+              <p id="categoryDescription">Convert familiar measurements and work through quick arithmetic.</p>
+            </div>
+            <div class="drawer-ctrls">
+              <button id="drawerAllToggle" class="btn" type="button" aria-pressed="false">All Tools (35)</button>
+              <button id="drawerPrev" class="btn btn-icon" type="button" aria-label="Previous category">←</button>
+              <button id="drawerNext" class="btn btn-icon" type="button" aria-label="Next category">→</button>
+              <button id="drawerPinBtn" class="btn" type="button" aria-pressed="false">📌 Pin</button>
+              <button id="drawerCloseBtn" class="btn btn-icon" type="button" aria-label="Close menu">×</button>
+            </div>
+          </div>
+          <div id="drawerViewport" class="drawer-viewport">
+            <div id="toolNav" class="drawer-track"></div>
+          </div>
+          <div id="drawerFooter" class="drawer-foot">
+            <div id="drawerIndicators" class="drawer-dots" role="tablist"></div>
+            <p class="drawer-hint">Swipe left/right, drag, or click ← → to switch categories</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </header>
+
+  <div id="drawerBackdrop" class="drawer-backdrop" aria-hidden="true"></div>
+
+  <div class="shell">
+    <section class="header-card" aria-label="Active tool">
+      <div class="header-top">
+        <div>
+          <span id="currentSection" class="pill">Everyday</span>
+          <h1 id="toolTitle">Calculator</h1>
+          <p id="toolDescription">Do quick arithmetic with a keypad and see each step.</p>
+        </div>
+        <button id="favoriteButton" class="btn" type="button" aria-pressed="false">
+          <span style="color:var(--star);font-size:15px" aria-hidden="true">☆</span>
+          <span id="favoriteLabel">Save tool</span>
+        </button>
+      </div>
+      <div class="recent-bar">
+        <div class="recent-group">
+          <span class="recent-label">Recent</span>
+          <div id="recentTools"><p class="empty-note">Your recent tools will appear here.</p></div>
+        </div>
+        <button id="clearRecent" class="btn btn-text" type="button">Clear recent</button>
+      </div>
+    </section>
+
+    <main id="toolWorkspace" class="workspace"></main>
+  </div>
+
+  <footer class="footer">
+    <span>Numerica Calc — Precision Workbench · 35 self-contained tools · Preferences &amp; history stay on this device.</span>
+    <span>Live feeds: Frankfurter (FX) · Gold-API (Spot) · Standard Bullion (History)</span>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    function showRuntimeError(err) {
+      var banner = document.getElementById("runtimeErrorBanner");
+      var text = document.getElementById("runtimeErrorText");
+      if (banner && text) {
+        text.textContent = "Diagnostic error: " + (err && err.message ? err.message : String(err));
+        banner.classList.remove("hidden");
+      }
+    }
+
+    window.addEventListener("error", function (e) { showRuntimeError(e.error || e.message); });
+    window.addEventListener("unhandledrejection", function (e) { showRuntimeError(e.reason); });
+
+    try {
+      /* Safe storage with in-memory fallback for sandboxed iframes */
+      var memStore = new Map();
+      function readStored(k, fb) {
+        try {
+          var v = window.localStorage.getItem(k);
+          if (v !== null) return JSON.parse(v);
+        } catch (e) {}
+        return memStore.has(k) ? memStore.get(k) : fb;
+      }
+      function readList(k) { var v = readStored(k, []); return Array.isArray(v) ? v : []; }
+      function saveStored(k, v) {
+        memStore.set(k, v);
+        try { window.localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+        return true;
+      }
+
+      /* Tool Groups & 35 Tools */
+      var toolGroups = [
+        { name: "Make it yours", description: "Save custom conversions and return to calculations you kept.", tools: ["custom", "history"] },
+        { name: "Everyday", description: "Convert familiar measurements and work through quick arithmetic.", tools: ["calculator", "length", "mass", "temperature", "volume", "area", "speed", "time", "data", "cooking"] },
+        { name: "Worksite & science", description: "Technical units, binary computation, and engineering tools.", tools: ["binary", "angle", "pressure", "flow", "density", "torque", "energy", "power", "force", "frequency", "current", "voltage", "resistance", "fuel"] },
+        { name: "Finance", description: "Explore currencies, metals, card bills, interest, EMI, and index values.", tools: ["currency", "metals", "index", "credit-card", "interest", "emi"] },
+        { name: "Health", description: "Explore a BMI screening estimate with its limits explained.", tools: ["bmi"] },
+        { name: "Fashion & sizing", description: "Find suitable clothing and footwear sizes using body indices and country standards.", tools: ["clothing-size", "shoe-size"] }
+      ];
+
+      var tools = [
+        { id: "calculator", title: "Calculator", group: "Everyday", description: "Quick arithmetic with keypad, keyboard shortcuts, and live working steps.", kind: "calculator" },
+        { id: "custom", title: "Custom conversion", group: "Make it yours", description: "Convert any custom unit pair using a factor you know.", kind: "custom" },
+        { id: "history", title: "Calculation history", group: "Make it yours", description: "Reopen saved calculations on this device.", kind: "history" },
+        { id: "length", title: "Length", group: "Everyday", description: "Convert meters, feet, inches, miles, and nautical miles.", kind: "units", defaults: ["m", "ft"], units: [
+          { id: "m", name: "Meter", symbol: "m", factor: 1 }, { id: "km", name: "Kilometer", symbol: "km", factor: 1000 },
+          { id: "cm", name: "Centimeter", symbol: "cm", factor: 0.01 }, { id: "mm", name: "Millimeter", symbol: "mm", factor: 0.001 },
+          { id: "um", name: "Micrometer", symbol: "μm", factor: 0.000001 }, { id: "in", name: "Inch", symbol: "in", factor: 0.0254 },
+          { id: "ft", name: "Foot", symbol: "ft", factor: 0.3048 }, { id: "yd", name: "Yard", symbol: "yd", factor: 0.9144 },
+          { id: "mi", name: "Mile", symbol: "mi", factor: 1609.344 }, { id: "nmi", name: "Nautical mile", symbol: "nmi", factor: 1852 }
+        ]},
+        { id: "mass", title: "Weight & mass", group: "Everyday", description: "Compare milligrams, grams, kilograms, pounds, ounces, and tonnes.", kind: "units", defaults: ["kg", "lb"], units: [
+          { id: "kg", name: "Kilogram", symbol: "kg", factor: 1 }, { id: "g", name: "Gram", symbol: "g", factor: 0.001 },
+          { id: "mg", name: "Milligram", symbol: "mg", factor: 0.000001 }, { id: "t", name: "Metric tonne", symbol: "t", factor: 1000 },
+          { id: "lb", name: "Pound", symbol: "lb", factor: 0.45359237 }, { id: "oz", name: "Ounce", symbol: "oz", factor: 0.028349523125 },
+          { id: "st", name: "Stone", symbol: "st", factor: 6.35029318 }, { id: "us-ton", name: "US short ton", symbol: "US ton", factor: 907.18474 }
+        ]},
+        { id: "temperature", title: "Temperature", group: "Everyday", description: "Convert between Celsius, Fahrenheit, and Kelvin.", kind: "units", defaults: ["c", "f"], units: [
+          { id: "c", name: "Celsius", symbol: "°C", scale: 1, offset: 0 },
+          { id: "f", name: "Fahrenheit", symbol: "°F", scale: 5 / 9, offset: -32 * 5 / 9 },
+          { id: "k", name: "Kelvin", symbol: "K", scale: 1, offset: -273.15 }
+        ]},
+        { id: "volume", title: "Volume", group: "Everyday", description: "Compare liters, milliliters, gallons, quarts, and cubic units.", kind: "units", defaults: ["l", "gal-us"], units: [
+          { id: "l", name: "Liter", symbol: "L", factor: 0.001 }, { id: "ml", name: "Milliliter", symbol: "mL", factor: 0.000001 },
+          { id: "m3", name: "Cubic meter", symbol: "m³", factor: 1 }, { id: "cm3", name: "Cubic centimeter", symbol: "cm³", factor: 0.000001 },
+          { id: "gal-us", name: "US gallon", symbol: "US gal", factor: 0.003785411784 }, { id: "gal-uk", name: "Imperial gallon", symbol: "Imp gal", factor: 0.00454609 },
+          { id: "qt-us", name: "US quart", symbol: "US qt", factor: 0.000946352946 }, { id: "cup-us", name: "US cup", symbol: "US cup", factor: 0.0002365882365 },
+          { id: "ft3", name: "Cubic foot", symbol: "ft³", factor: 0.028316846592 }
+        ]},
+        { id: "area", title: "Area", group: "Everyday", description: "Compare square meters, square feet, hectares, and acres.", kind: "units", defaults: ["m2", "ft2"], units: [
+          { id: "m2", name: "Square meter", symbol: "m²", factor: 1 }, { id: "km2", name: "Square kilometer", symbol: "km²", factor: 1000000 },
+          { id: "cm2", name: "Square centimeter", symbol: "cm²", factor: 0.0001 }, { id: "ha", name: "Hectare", symbol: "ha", factor: 10000 },
+          { id: "acre", name: "Acre", symbol: "ac", factor: 4046.8564224 }, { id: "ft2", name: "Square foot", symbol: "ft²", factor: 0.09290304 },
+          { id: "yd2", name: "Square yard", symbol: "yd²", factor: 0.83612736 }, { id: "mi2", name: "Square mile", symbol: "mi²", factor: 2589988.110336 }
+        ]},
+        { id: "speed", title: "Speed", group: "Everyday", description: "Switch between km/h, mph, m/s, knots, and ft/s.", kind: "units", defaults: ["kmh", "mph"], units: [
+          { id: "ms", name: "Meters per second", symbol: "m/s", factor: 1 }, { id: "kmh", name: "Kilometers per hour", symbol: "km/h", factor: 1 / 3.6 },
+          { id: "mph", name: "Miles per hour", symbol: "mph", factor: 0.44704 }, { id: "knot", name: "Knot", symbol: "kn", factor: 0.5144444444 },
+          { id: "fts", name: "Feet per second", symbol: "ft/s", factor: 0.3048 }
+        ]},
+        { id: "time", title: "Time", group: "Everyday", description: "Convert milliseconds, seconds, minutes, hours, days, weeks, and years.", kind: "units", defaults: ["h", "min"], units: [
+          { id: "s", name: "Second", symbol: "s", factor: 1 }, { id: "ms", name: "Millisecond", symbol: "ms", factor: 0.001 },
+          { id: "min", name: "Minute", symbol: "min", factor: 60 }, { id: "h", name: "Hour", symbol: "h", factor: 3600 },
+          { id: "day", name: "Day", symbol: "day", factor: 86400 }, { id: "week", name: "Week", symbol: "week", factor: 604800 },
+          { id: "year", name: "Year (365 days)", symbol: "yr", factor: 31536000 }
+        ]},
+        { id: "data", title: "Data storage", group: "Everyday", description: "Compare decimal (kB/MB/GB) and binary (KiB/MiB/GiB) storage.", kind: "units", defaults: ["mb", "gib"], units: [
+          { id: "bit", name: "Bit", symbol: "bit", factor: 0.125 }, { id: "byte", name: "Byte", symbol: "B", factor: 1 },
+          { id: "kb", name: "Kilobyte (1000 B)", symbol: "kB", factor: 1000 }, { id: "kib", name: "Kibibyte (1024 B)", symbol: "KiB", factor: 1024 },
+          { id: "mb", name: "Megabyte", symbol: "MB", factor: 1000000 }, { id: "mib", name: "Mebibyte", symbol: "MiB", factor: 1048576 },
+          { id: "gb", name: "Gigabyte", symbol: "GB", factor: 1000000000 }, { id: "gib", name: "Gibibyte", symbol: "GiB", factor: 1073741824 },
+          { id: "tb", name: "Terabyte", symbol: "TB", factor: 1000000000000 }
+        ]},
+        { id: "cooking", title: "Cooking volume", group: "Everyday", description: "Turn spoons and US cups into milliliters or liters.", kind: "units", defaults: ["cup", "ml"], units: [
+          { id: "ml", name: "Milliliter", symbol: "mL", factor: 0.000001 },
+          { id: "tsp", name: "US teaspoon", symbol: "tsp", factor: 0.000004928921594 },
+          { id: "tbsp", name: "US tablespoon", symbol: "tbsp", factor: 0.00001478676478 },
+          { id: "floz", name: "US fluid ounce", symbol: "US fl oz", factor: 0.00002957352956 },
+          { id: "cup", name: "US cup", symbol: "US cup", factor: 0.0002365882365 },
+          { id: "pint", name: "US pint", symbol: "US pt", factor: 0.000473176473 },
+          { id: "l", name: "Liter", symbol: "L", factor: 0.001 }
+        ]},
+        { id: "binary", title: "Binary computational calculator", group: "Worksite & science", description: "Perform binary arithmetic, bitwise logic, shifts, complements, and base conversions.", kind: "binary" },
+        { id: "angle", title: "Angle", group: "Worksite & science", description: "Convert degrees, radians, gradians, turns, and arcminutes.", kind: "units", defaults: ["deg", "rad"], units: [
+          { id: "deg", name: "Degree", symbol: "°", factor: Math.PI / 180 }, { id: "rad", name: "Radian", symbol: "rad", factor: 1 },
+          { id: "grad", name: "Gradian", symbol: "gon", factor: Math.PI / 200 }, { id: "turn", name: "Turn", symbol: "turn", factor: 2 * Math.PI },
+          { id: "arcmin", name: "Arcminute", symbol: "′", factor: Math.PI / 10800 }
+        ]},
+        { id: "pressure", title: "Pressure", group: "Worksite & science", description: "Convert pascals, kPa, bar, atm, psi, and mmHg.", kind: "units", defaults: ["kpa", "psi"], units: [
+          { id: "pa", name: "Pascal", symbol: "Pa", factor: 1 }, { id: "kpa", name: "Kilopascal", symbol: "kPa", factor: 1000 },
+          { id: "mpa", name: "Megapascal", symbol: "MPa", factor: 1000000 }, { id: "bar", name: "Bar", symbol: "bar", factor: 100000 },
+          { id: "atm", name: "Atmosphere", symbol: "atm", factor: 101325 }, { id: "psi", name: "Pounds per sq in", symbol: "psi", factor: 6894.757293 },
+          { id: "mmhg", name: "Millimeters of mercury", symbol: "mmHg", factor: 133.3223874 }
+        ]},
+        { id: "flow", title: "Flow rate", group: "Worksite & science", description: "Compare liquid flow rates in L/min, L/s, m³/h, and US gpm.", kind: "units", defaults: ["lmin", "gpm"], units: [
+          { id: "m3s", name: "Cubic meter per sec", symbol: "m³/s", factor: 1 }, { id: "ls", name: "Liter per sec", symbol: "L/s", factor: 0.001 },
+          { id: "lmin", name: "Liter per min", symbol: "L/min", factor: 1 / 60000 }, { id: "m3h", name: "Cubic meter per hr", symbol: "m³/h", factor: 1 / 3600 },
+          { id: "gpm", name: "US gallon per min", symbol: "US gal/min", factor: 0.003785411784 / 60 }
+        ]},
+        { id: "density", title: "Density", group: "Worksite & science", description: "Compare mass per volume in metric and customary units.", kind: "units", defaults: ["kgm3", "lbft3"], units: [
+          { id: "kgm3", name: "kg per cubic meter", symbol: "kg/m³", factor: 1 }, { id: "gcm3", name: "g per cubic cm", symbol: "g/cm³", factor: 1000 },
+          { id: "gml", name: "g per milliliter", symbol: "g/mL", factor: 1000 }, { id: "kgL", name: "kg per liter", symbol: "kg/L", factor: 1000 },
+          { id: "lbft3", name: "lb per cubic foot", symbol: "lb/ft³", factor: 16.01846337 }, { id: "lbgal", name: "lb per US gallon", symbol: "lb/US gal", factor: 119.8264273 }
+        ]},
+        { id: "torque", title: "Torque", group: "Worksite & science", description: "Convert newton-meters, lbf·ft, lbf·in, and kgf·m.", kind: "units", defaults: ["nm", "lbfft"], units: [
+          { id: "nm", name: "Newton meter", symbol: "N·m", factor: 1 }, { id: "knm", name: "Kilonewton meter", symbol: "kN·m", factor: 1000 },
+          { id: "lbfft", name: "Pound-force foot", symbol: "lbf·ft", factor: 1.355817948 }, { id: "lbfin", name: "Pound-force inch", symbol: "lbf·in", factor: 0.112984829 },
+          { id: "kgfm", name: "Kilogram-force meter", symbol: "kgf·m", factor: 9.80665 }
+        ]},
+        { id: "energy", title: "Energy", group: "Worksite & science", description: "Compare joules, calories, kilowatt-hours, and BTUs.", kind: "units", defaults: ["kwh", "btu"], units: [
+          { id: "j", name: "Joule", symbol: "J", factor: 1 }, { id: "kj", name: "Kilojoule", symbol: "kJ", factor: 1000 },
+          { id: "cal", name: "Small calorie", symbol: "cal", factor: 4.184 }, { id: "kcal", name: "Kilocalorie", symbol: "kcal", factor: 4184 },
+          { id: "wh", name: "Watt-hour", symbol: "Wh", factor: 3600 }, { id: "kwh", name: "Kilowatt-hour", symbol: "kWh", factor: 3600000 },
+          { id: "btu", name: "British thermal unit", symbol: "BTU", factor: 1055.055852 }
+        ]},
+        { id: "power", title: "Power", group: "Worksite & science", description: "Convert watts, kilowatts, megawatts, and horsepower.", kind: "units", defaults: ["kw", "hp"], units: [
+          { id: "w", name: "Watt", symbol: "W", factor: 1 }, { id: "kw", name: "Kilowatt", symbol: "kW", factor: 1000 },
+          { id: "mw", name: "Megawatt", symbol: "MW", factor: 1000000 }, { id: "hp", name: "Mechanical horsepower", symbol: "hp", factor: 745.6998716 },
+          { id: "ps", name: "Metric horsepower", symbol: "PS", factor: 735.49875 }
+        ]},
+        { id: "force", title: "Force", group: "Worksite & science", description: "Compare newtons, kilonewtons, pound-force, and kgf.", kind: "units", defaults: ["kn", "lbf"], units: [
+          { id: "n", name: "Newton", symbol: "N", factor: 1 }, { id: "kn", name: "Kilonewton", symbol: "kN", factor: 1000 },
+          { id: "lbf", name: "Pound-force", symbol: "lbf", factor: 4.448221615 }, { id: "kgf", name: "Kilogram-force", symbol: "kgf", factor: 9.80665 }
+        ]},
+        { id: "frequency", title: "Frequency", group: "Worksite & science", description: "Convert Hz, kHz, MHz, GHz, and RPM.", kind: "units", defaults: ["hz", "rpm"], units: [
+          { id: "hz", name: "Hertz", symbol: "Hz", factor: 1 }, { id: "khz", name: "Kilohertz", symbol: "kHz", factor: 1000 },
+          { id: "mhz", name: "Megahertz", symbol: "MHz", factor: 1000000 }, { id: "ghz", name: "Gigahertz", symbol: "GHz", factor: 1000000000 },
+          { id: "rpm", name: "Revolutions per min", symbol: "rpm", factor: 1 / 60 }
+        ]},
+        { id: "current", title: "Electric current", group: "Worksite & science", description: "Convert amperes, mA, μA, and kA.", kind: "units", defaults: ["a", "ma"], units: [
+          { id: "a", name: "Ampere", symbol: "A", factor: 1 }, { id: "ma", name: "Milliampere", symbol: "mA", factor: 0.001 },
+          { id: "ua", name: "Microampere", symbol: "μA", factor: 0.000001 }, { id: "ka", name: "Kiloampere", symbol: "kA", factor: 1000 }
+        ]},
+        { id: "voltage", title: "Voltage", group: "Worksite & science", description: "Convert volts, millivolts, kilovolts, and megavolts.", kind: "units", defaults: ["v", "mv"], units: [
+          { id: "v", name: "Volt", symbol: "V", factor: 1 }, { id: "mv", name: "Millivolt", symbol: "mV", factor: 0.001 },
+          { id: "kv", name: "Kilovolt", symbol: "kV", factor: 1000 }, { id: "mv2", name: "Megavolt", symbol: "MV", factor: 1000000 }
+        ]},
+        { id: "resistance", title: "Resistance", group: "Worksite & science", description: "Convert ohms, milliohms, kiloohms, and megaohms.", kind: "units", defaults: ["ohm", "kohm"], units: [
+          { id: "ohm", name: "Ohm", symbol: "Ω", factor: 1 }, { id: "mohm", name: "Milliohm", symbol: "mΩ", factor: 0.001 },
+          { id: "kohm", name: "Kiloohm", symbol: "kΩ", factor: 1000 }, { id: "Mohm", name: "Megaohm", symbol: "MΩ", factor: 1000000 }
+        ]},
+        { id: "fuel", title: "Fuel economy", group: "Worksite & science", description: "Compare L/100 km, km/L, mpg US, and mpg UK.", kind: "units", defaults: ["l100", "mpgus"], units: [
+          { id: "l100", name: "Liters per 100 km", symbol: "L/100 km", custom: true }, { id: "kml", name: "Kilometers per liter", symbol: "km/L", custom: true },
+          { id: "mpgus", name: "Miles per US gallon", symbol: "mpg US", custom: true }, { id: "mpguk", name: "Miles per Imp gallon", symbol: "mpg UK", custom: true }
+        ]},
+        { id: "currency", title: "Currency", group: "Finance", description: "Convert currencies with dated Frankfurter reference rates and history.", kind: "currency" },
+        { id: "metals", title: "Gold & silver", group: "Finance", description: "Estimate gold or silver spot value from weight with price history.", kind: "metals" },
+        { id: "index", title: "Index calculator", group: "Finance", description: "Compare two index levels and rebase the result.", kind: "index" },
+        { id: "credit-card", title: "Credit card bill planner", group: "Finance", description: "Estimate INR purchase GST, statement timing, overdue interest, and GST on interest.", kind: "credit-card" },
+        { id: "interest", title: "Compound interest calculator", group: "Finance", description: "Compare compound and simple interest across frequencies.", kind: "interest" },
+        { id: "emi", title: "EMI calculator", group: "Finance", description: "Estimate fixed monthly loan EMI, total repayment, and total interest.", kind: "emi" },
+        { id: "bmi", title: "BMI calculator", group: "Health", description: "Estimate adult BMI from height and weight with formula.", kind: "bmi" },
+        { id: "clothing-size", title: "Clothing size finder", group: "Fashion & sizing", description: "Find clothing sizes from body measurements & indices or convert IN/US/UK/EU/JP.", kind: "clothing-size" },
+        { id: "shoe-size", title: "Footwear & shoe size", group: "Fashion & sizing", description: "Find shoe size from foot length, width index & toe room or convert IN/UK/US/EU/JP/CN.", kind: "shoe-size" }
+      ];
+
+      var currencyList = [
+        ["USD", "US dollar"], ["EUR", "Euro"], ["GBP", "Pound sterling"], ["INR", "Indian rupee"],
+        ["JPY", "Japanese yen"], ["CAD", "Canadian dollar"], ["AUD", "Australian dollar"], ["CHF", "Swiss franc"],
+        ["CNY", "Chinese yuan"], ["SGD", "Singapore dollar"], ["HKD", "Hong Kong dollar"], ["NZD", "New Zealand dollar"],
+        ["AED", "UAE dirham"], ["SAR", "Saudi riyal"], ["KRW", "South Korean won"], ["BRL", "Brazilian real"]
+      ];
+      var metalNames = { XAU: "Gold", XAG: "Silver" };
+
+      /* Fashion & Sizing Reference Tables */
+      var clothingCharts = {
+        men: [
+          { intl: "XS", inS: "36", us: "34", uk: "34", eu: "44", jp: "S", chest: [84, 89], waist: [70, 75], hip: [86, 91] },
+          { intl: "S",  inS: "38", us: "36", uk: "36", eu: "46", jp: "M", chest: [90, 95], waist: [76, 81], hip: [92, 97] },
+          { intl: "M",  inS: "40", us: "38", uk: "38", eu: "48", jp: "L", chest: [96, 101], waist: [82, 87], hip: [98, 103] },
+          { intl: "L",  inS: "42", us: "40", uk: "40", eu: "50", jp: "LL", chest: [102, 107], waist: [88, 93], hip: [104, 109] },
+          { intl: "XL", inS: "44", us: "42", uk: "42", eu: "52", jp: "3L", chest: [108, 114], waist: [94, 100], hip: [110, 115] },
+          { intl: "2XL",inS: "46", us: "44", uk: "44", eu: "54", jp: "4L", chest: [115, 121], waist: [101, 107], hip: [116, 121] },
+          { intl: "3XL",inS: "48", us: "46", uk: "46", eu: "56", jp: "5L", chest: [122, 129], waist: [108, 115], hip: [122, 128] }
+        ],
+        women: [
+          { intl: "XS", inS: "32", us: "2", uk: "6", eu: "34", jp: "5", chest: [78, 82], waist: [60, 64], hip: [85, 89] },
+          { intl: "S",  inS: "34", us: "4", uk: "8", eu: "36", jp: "7", chest: [83, 87], waist: [65, 69], hip: [90, 94] },
+          { intl: "M",  inS: "36", us: "6", uk: "10", eu: "38", jp: "9", chest: [88, 92], waist: [70, 74], hip: [95, 99] },
+          { intl: "L",  inS: "38", us: "8", uk: "12", eu: "40", jp: "11", chest: [93, 98], waist: [75, 80], hip: [100, 105] },
+          { intl: "XL", inS: "40", us: "10", uk: "14", eu: "42", jp: "13", chest: [99, 105], waist: [81, 87], hip: [106, 112] },
+          { intl: "2XL",inS: "42", us: "12", uk: "16", eu: "44", jp: "15", chest: [106, 112], waist: [88, 95], hip: [113, 119] },
+          { intl: "3XL",inS: "44", us: "14", uk: "18", eu: "46", jp: "17", chest: [113, 120], waist: [96, 103], hip: [120, 127] }
+        ],
+        unisex: [
+          { intl: "XS", inS: "34", us: "XS (34)", uk: "34", eu: "42", jp: "S", chest: [81, 86], waist: [66, 71], hip: [86, 91] },
+          { intl: "S",  inS: "36", us: "S (36)", uk: "36", eu: "44", jp: "M", chest: [87, 92], waist: [72, 77], hip: [92, 97] },
+          { intl: "M",  inS: "38", us: "M (38)", uk: "38", eu: "46", jp: "L", chest: [93, 98], waist: [78, 83], hip: [98, 103] },
+          { intl: "L",  inS: "40", us: "L (40)", uk: "40", eu: "48", jp: "LL", chest: [99, 105], waist: [84, 90], hip: [104, 109] },
+          { intl: "XL", inS: "42", us: "XL (42)", uk: "42", eu: "50", jp: "3L", chest: [106, 112], waist: [91, 97], hip: [110, 116] },
+          { intl: "2XL",inS: "44", us: "2XL (44)", uk: "44", eu: "52", jp: "4L", chest: [113, 119], waist: [98, 105], hip: [117, 123] },
+          { intl: "3XL",inS: "46", us: "3XL (46)", uk: "46", eu: "54", jp: "5L", chest: [120, 127], waist: [106, 113], hip: [124, 130] }
+        ]
+      };
+
+      var shoeCharts = {
+        men: [
+          { cm: 24.0, inS: "5", uk: "5", us: "6", eu: "38.5", jp: "24.0", cn: "38" },
+          { cm: 24.5, inS: "5.5", uk: "5.5", us: "6.5", eu: "39", jp: "24.5", cn: "39" },
+          { cm: 25.0, inS: "6", uk: "6", us: "7", eu: "40", jp: "25.0", cn: "40" },
+          { cm: 25.5, inS: "6.5", uk: "6.5", us: "7.5", eu: "40.5", jp: "25.5", cn: "40.5" },
+          { cm: 26.0, inS: "7", uk: "7", us: "8", eu: "41", jp: "26.0", cn: "41" },
+          { cm: 26.5, inS: "7.5", uk: "7.5", us: "8.5", eu: "42", jp: "26.5", cn: "42" },
+          { cm: 27.0, inS: "8", uk: "8", us: "9", eu: "42.5", jp: "27.0", cn: "42.5" },
+          { cm: 27.5, inS: "8.5", uk: "8.5", us: "9.5", eu: "43", jp: "27.5", cn: "43" },
+          { cm: 28.0, inS: "9", uk: "9", us: "10", eu: "44", jp: "28.0", cn: "44" },
+          { cm: 28.5, inS: "9.5", uk: "9.5", us: "10.5", eu: "44.5", jp: "28.5", cn: "44.5" },
+          { cm: 29.0, inS: "10", uk: "10", us: "11", eu: "45", jp: "29.0", cn: "45" },
+          { cm: 30.0, inS: "11", uk: "11", us: "12", eu: "46", jp: "30.0", cn: "46" },
+          { cm: 31.0, inS: "12", uk: "12", us: "13", eu: "47.5", jp: "31.0", cn: "47" }
+        ],
+        women: [
+          { cm: 22.0, inS: "3", uk: "3", us: "5", eu: "35.5", jp: "22.0", cn: "35" },
+          { cm: 22.5, inS: "3.5", uk: "3.5", us: "5.5", eu: "36", jp: "22.5", cn: "36" },
+          { cm: 23.0, inS: "4", uk: "4", us: "6", eu: "36.5", jp: "23.0", cn: "36.5" },
+          { cm: 23.5, inS: "4.5", uk: "4.5", us: "6.5", eu: "37.5", jp: "23.5", cn: "37" },
+          { cm: 24.0, inS: "5", uk: "5", us: "7", eu: "38", jp: "24.0", cn: "38" },
+          { cm: 24.5, inS: "5.5", uk: "5.5", us: "7.5", eu: "38.5", jp: "24.5", cn: "38.5" },
+          { cm: 25.0, inS: "6", uk: "6", us: "8", eu: "39", jp: "25.0", cn: "39" },
+          { cm: 25.5, inS: "6.5", uk: "6.5", us: "8.5", eu: "40", jp: "25.5", cn: "40" },
+          { cm: 26.0, inS: "7", uk: "7", us: "9", eu: "40.5", jp: "26.0", cn: "40.5" },
+          { cm: 26.5, inS: "7.5", uk: "7.5", us: "9.5", eu: "41", jp: "26.5", cn: "41" },
+          { cm: 27.0, inS: "8", uk: "8", us: "10", eu: "42", jp: "27.0", cn: "42" }
+        ],
+        kids: [
+          { cm: 16.5, inS: "9.5C", uk: "9.5", us: "10C", eu: "27", jp: "16.5", cn: "27" },
+          { cm: 17.5, inS: "10.5C", uk: "10.5", us: "11C", eu: "28", jp: "17.5", cn: "28" },
+          { cm: 18.5, inS: "11.5C", uk: "11.5", us: "12C", eu: "29.5", jp: "18.5", cn: "29.5" },
+          { cm: 19.5, inS: "12.5C", uk: "12.5", us: "13C", eu: "31", jp: "19.5", cn: "31" },
+          { cm: 20.5, inS: "1Y", uk: "1", us: "1.5Y", eu: "32.5", jp: "20.5", cn: "32.5" },
+          { cm: 21.5, inS: "2Y", uk: "2", us: "2.5Y", eu: "34", jp: "21.5", cn: "34" },
+          { cm: 22.5, inS: "3Y", uk: "3", us: "3.5Y", eu: "35.5", jp: "22.5", cn: "35.5" },
+          { cm: 23.5, inS: "4Y", uk: "4", us: "4.5Y", eu: "36.5", jp: "23.5", cn: "36.5" }
+        ]
+      };
+
+      /* Application State */
+      var state = {
+        activeTool: "calculator",
+        activeCategory: "Everyday",
+        search: "",
+        fx: null, fxStatus: "idle", fxError: "",
+        spots: {},
+        recent: readList("ic-recent"),
+        favorites: readList("ic-favorites"),
+        history: readList("ic-history").slice(0, 25),
+        customConversions: readList("ic-custom").slice(0, 30),
+        fxHistoryCache: {}, metalHistoryCache: {},
+        fxHistoryRange: "1m", metalHistoryRange: "1m",
+        challenge: null,
+        calculator: { display: "0", accumulator: null, operator: null, waitingForOperand: true, expression: "", error: "" },
+        drawerOpen: false, drawerPinned: false, drawerShowAll: false,
+        hoverTimer: 0, leaveTimer: 0,
+        clothingMode: "measure", shoeMode: "measure",
+        binaryMode: "arith", binaryWidth: 8, binarySigned: "unsigned", binaryConvVal: 45n,
+        toastTimer: 0
+      };
+
+      var $ = function (id) { return document.getElementById(id); };
+      var toolNav = $("toolNav"), categoryNav = $("categoryNav"), workspace = $("toolWorkspace");
+      var toolDrawer = $("toolDrawer"), drawerBackdrop = $("drawerBackdrop"), toast = $("toast");
+
+      function esc(v) {
+        return String(v).replace(/[&<>"']/g, function (c) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+        });
+      }
+      function fmtNum(v, d) {
+        if (!Number.isFinite(v)) return "—";
+        if (Object.is(v, -0)) v = 0;
+        try { return new Intl.NumberFormat(undefined, { maximumSignificantDigits: d || 8 }).format(v); }
+        catch (e) { return String(Number(v.toPrecision(d || 8))); }
+      }
+      function fmtMoney(v, cur, maxF) {
+        if (!Number.isFinite(v)) return "—";
+        try { return new Intl.NumberFormat(undefined, { style: "currency", currency: cur, maximumFractionDigits: maxF === undefined ? 2 : maxF }).format(v); }
+        catch (e) { return fmtNum(v, 6) + " " + cur; }
+      }
+      function fmtDate(s) {
+        var d = new Date(s);
+        return Number.isNaN(d.getTime()) ? (s || "—") : d.toLocaleDateString(undefined, { dateStyle: "medium", timeZone: "UTC" });
+      }
+      function showToast(msg) {
+        if (!toast) return;
+        clearTimeout(state.toastTimer);
+        toast.textContent = msg;
+        toast.classList.add("is-visible");
+        state.toastTimer = setTimeout(function () { toast.classList.remove("is-visible"); }, 2300);
+      }
+      function activeTool() { return tools.find(function (t) { return t.id === state.activeTool; }) || tools[0]; }
+
+      async function fetchJson(url, name) {
+        var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+        var tid = ctrl ? setTimeout(function () { ctrl.abort(); }, 9000) : 0;
+        try {
+          var r = await fetch(url, { cache: "no-store", signal: ctrl ? ctrl.signal : undefined });
+          if (!r.ok) throw new Error(name + " returned HTTP " + r.status);
+          return await r.json();
+        } finally { if (tid) clearTimeout(tid); }
+      }
+
+      /* Navigation: Always-Visible Category Bar + Hover & Swipeable Overlay */
+      function getGroups(applySearch) {
+        var q = applySearch ? state.search.trim().toLowerCase() : "";
+        var list = [];
+        var favs = state.favorites.map(function (id) { return tools.find(function (t) { return t.id === id; }); })
+          .filter(function (t) { return t && (!q || (t.title + " " + t.group + " " + t.description).toLowerCase().includes(q)); });
+        if (favs.length) list.push({ name: "Saved tools", description: "Shortcuts to your starred tools.", tools: favs });
+        toolGroups.forEach(function (g) {
+          var ts = g.tools.map(function (id) { return tools.find(function (t) { return t.id === id; }); })
+            .filter(function (t) { return t && (!q || (t.title + " " + t.group + " " + t.description + " " + g.name).toLowerCase().includes(q)); });
+          if (ts.length) list.push({ name: g.name, description: g.description, tools: ts });
+        });
+        return list;
+      }
+
+      function cardHtml(t) {
+        var fav = state.favorites.includes(t.id);
+        return '<article class="tool-card ' + (t.id === state.activeTool ? "is-current" : "") + '">' +
+          '<button class="tool-card-open" type="button" data-tool="' + esc(t.id) + '">' +
+          '<span class="tool-code">' + esc(t.title.slice(0, 2).toUpperCase()) + '</span>' +
+          '<span class="tool-card-copy"><strong>' + esc(t.title) + '</strong><span>' + esc(t.description) + '</span></span></button>' +
+          '<button class="tool-fav" type="button" data-favorite-tool="' + esc(t.id) + '" aria-pressed="' + fav + '" aria-label="Save ' + esc(t.title) + '">' + (fav ? "★" : "☆") + '</button></article>';
+      }
+
+      function syncDrawer() {
+        var open = state.drawerOpen || state.drawerPinned;
+        if (toolDrawer) {
+          toolDrawer.classList.toggle("is-open", open);
+          toolDrawer.classList.toggle("is-pinned", state.drawerPinned);
+          toolDrawer.setAttribute("aria-hidden", String(!open));
+        }
+        if (drawerBackdrop) {
+          drawerBackdrop.classList.toggle("is-open", open && !state.drawerPinned);
+          drawerBackdrop.classList.toggle("is-pinned", state.drawerPinned);
+        }
+        if ($("drawerPinBtn")) {
+          $("drawerPinBtn").setAttribute("aria-pressed", String(state.drawerPinned));
+          $("drawerPinBtn").textContent = state.drawerPinned ? "📌 Pinned" : "📌 Pin";
+        }
+        if ($("drawerAllToggle")) $("drawerAllToggle").setAttribute("aria-pressed", String(state.drawerShowAll));
+        if ($("browseAllButton")) $("browseAllButton").setAttribute("aria-expanded", String(open && state.drawerShowAll));
+      }
+
+      function openDrawer(opts) {
+        opts = opts || {};
+        clearTimeout(state.leaveTimer);
+        if (typeof opts.showAll === "boolean") state.drawerShowAll = opts.showAll;
+        if (opts.category) { state.activeCategory = opts.category; state.drawerShowAll = false; }
+        state.drawerOpen = true;
+        renderNav();
+        syncDrawer();
+      }
+      function closeDrawer(force) {
+        clearTimeout(state.hoverTimer); clearTimeout(state.leaveTimer);
+        if (state.drawerPinned && !force) return;
+        if (force) state.drawerPinned = false;
+        state.drawerOpen = false;
+        syncDrawer();
+      }
+
+      function renderNav() {
+        if (!categoryNav || !toolNav) return;
+        var q = state.search.trim();
+        var allG = getGroups(false);
+        var filtG = q ? getGroups(true) : allG;
+        var sel = allG.find(function (g) { return g.name === state.activeCategory; }) || allG[0];
+        var idx = Math.max(0, allG.findIndex(function (g) { return sel && g.name === sel.name; }));
+        var open = state.drawerOpen || state.drawerPinned;
+
+        categoryNav.innerHTML = allG.map(function (g) {
+          var p = !state.drawerShowAll && !q && sel && g.name === sel.name;
+          return '<button class="cat-tab" type="button" data-category="' + esc(g.name) + '" aria-pressed="' + p + '" aria-expanded="' + (open && p) + '">' +
+            '<span>' + esc(g.name) + '</span><span class="cat-count">' + g.tools.length + '</span><span class="cat-chev">▾</span></button>';
+        }).join("") + '<button class="cat-tab cat-tab-all" type="button" data-all-tools="true" aria-pressed="' + (state.drawerShowAll && !q) + '"><span>All Tools</span><span class="cat-count">' + tools.length + '</span></button>';
+
+        if (q) {
+          var count = filtG.reduce(function (s, g) { return s + g.tools.length; }, 0);
+          $("categoryTitle").textContent = count ? "Search results (" + count + ")" : "No matching tools";
+          $("categoryDescription").textContent = count ? "Matches for “" + q + "”. Press Enter to open the first result." : "Try another keyword.";
+          toolNav.className = "all-sections"; toolNav.style.transform = "none";
+          $("drawerFooter").classList.add("hidden");
+          $("drawerPrev").disabled = true; $("drawerNext").disabled = true;
+          toolNav.innerHTML = count ? filtG.map(function (g) {
+            return '<div><div class="all-group-head"><h3>' + esc(g.name) + '</h3><span>' + g.tools.length + '</span></div><div class="tool-grid">' + g.tools.map(cardHtml).join("") + '</div></div>';
+          }).join("") : '<p class="empty-note" style="padding:16px;text-align:center">No tools match “' + esc(q) + '”.</p>';
+          syncDrawer(); return;
+        }
+
+        if (state.drawerShowAll) {
+          $("categoryTitle").textContent = "All Tools (" + tools.length + ")";
+          $("categoryDescription").textContent = "Every calculator, converter, finance, health, and sizing tool on screen.";
+          toolNav.className = "all-sections"; toolNav.style.transform = "none";
+          $("drawerFooter").classList.add("hidden");
+          $("drawerPrev").disabled = true; $("drawerNext").disabled = true;
+          toolNav.innerHTML = allG.map(function (g) {
+            return '<div><div class="all-group-head"><h3>' + esc(g.name) + '</h3><span>' + g.tools.length + ' tools</span></div><div class="tool-grid">' + g.tools.map(cardHtml).join("") + '</div></div>';
+          }).join("");
+          syncDrawer(); return;
+        }
+
+        if (sel) {
+          state.activeCategory = sel.name;
+          $("categoryTitle").textContent = sel.name + " (" + sel.tools.length + ")";
+          $("categoryDescription").textContent = sel.description;
+        }
+        toolNav.className = "drawer-track";
+        toolNav.innerHTML = allG.map(function (g) {
+          return '<div class="drawer-slide"><div class="tool-grid">' + g.tools.map(cardHtml).join("") + '</div></div>';
+        }).join("");
+        toolNav.style.transform = "translate3d(-" + (idx * 100) + "%,0,0)";
+        $("drawerPrev").disabled = idx <= 0;
+        $("drawerNext").disabled = idx >= allG.length - 1;
+        $("drawerFooter").classList.remove("hidden");
+        $("drawerIndicators").innerHTML = allG.map(function (g, i) {
+          return '<button class="drawer-dot ' + (i === idx ? "is-active" : "") + '" type="button" data-slide-index="' + i + '">' + esc(g.name) + '</button>';
+        }).join("");
+        syncDrawer();
+      }
+
+      function renderRecent() {
+        var c = $("recentTools"); if (!c) return;
+        var list = state.recent.filter(function (id) { return id !== state.activeTool; }).slice(0, 5);
+        c.innerHTML = list.length ? list.map(function (id) {
+          var t = tools.find(function (x) { return x.id === id; });
+          return t ? '<button class="recent-btn" type="button" data-tool="' + esc(t.id) + '">' + esc(t.title) + '</button>' : "";
+        }).join("") : '<p class="empty-note">Your recent tools will appear here.</p>';
+      }
+
+      function updateHeader() {
+        var t = activeTool();
+        $("toolTitle").textContent = t.title;
+        $("toolDescription").textContent = t.description;
+        $("currentSection").textContent = t.group;
+        var fav = state.favorites.includes(t.id);
+        $("favoriteButton").setAttribute("aria-pressed", String(fav));
+        $("favoriteButton").querySelector("span").textContent = fav ? "★" : "☆";
+        $("favoriteLabel").textContent = fav ? "Saved tool" : "Save tool";
+      }
+
+      function setTool(id, record) {
+        var t = tools.find(function (x) { return x.id === id; }); if (!t) return;
+        state.activeTool = id; state.activeCategory = t.group;
+        if (record !== false) {
+          state.recent = [id].concat(state.recent.filter(function (r) { return r !== id; })).slice(0, 8);
+          saveStored("ic-recent", state.recent);
+        }
+        updateHeader(); renderNav(); renderRecent(); renderTool(t);
+      }
+
+      function renderTool(t) {
+        if (t.kind === "calculator") return renderCalculator();
+        if (t.kind === "units") return renderUnits(t);
+        if (t.kind === "custom") return renderCustom();
+        if (t.kind === "history") return renderHistory();
+        if (t.kind === "currency") return renderCurrency();
+        if (t.kind === "metals") return renderMetals();
+        if (t.kind === "index") return renderIndex();
+        if (t.kind === "credit-card") return renderCreditCard();
+        if (t.kind === "interest") return renderInterest();
+        if (t.kind === "emi") return renderEmi();
+        if (t.kind === "bmi") return renderBmi();
+        if (t.kind === "clothing-size") return renderClothingSize();
+        if (t.kind === "shoe-size") return renderShoeSize();
+        if (t.kind === "binary") return renderBinary();
+      }
+
+      /* 1. Calculator */
+      function renderCalculator() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Calculator</h2><p>Keypad and keyboard supported. Working stays visible.</p></div><span class="panel-code">QUICK MATH</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="calc-screen"><p id="calculatorExpression" class="calc-expr"></p><output id="calculatorDisplay">0</output></div>' +
+            '<p id="calculatorError" class="formula hidden" role="alert"></p>' +
+            '<div class="calc-pad">' +
+              '<div class="calc-tools">' +
+                '<button class="ckey util" data-action="calc" data-key="clear">AC</button>' +
+                '<button class="ckey util" data-action="calc" data-key="del">⌫</button>' +
+                '<button class="ckey util" data-action="calc" data-key="sign">±</button>' +
+                '<button class="ckey util" data-action="calc" data-key="pct">%</button>' +
+                '<button class="ckey op" data-action="calc" data-key="/">÷</button>' +
+              '</div>' +
+              '<button class="ckey" data-action="calc" data-key="7">7</button><button class="ckey" data-action="calc" data-key="8">8</button><button class="ckey" data-action="calc" data-key="9">9</button><button class="ckey op" data-action="calc" data-key="*">×</button>' +
+              '<button class="ckey" data-action="calc" data-key="4">4</button><button class="ckey" data-action="calc" data-key="5">5</button><button class="ckey" data-action="calc" data-key="6">6</button><button class="ckey op" data-action="calc" data-key="-">−</button>' +
+              '<button class="ckey" data-action="calc" data-key="1">1</button><button class="ckey" data-action="calc" data-key="2">2</button><button class="ckey" data-action="calc" data-key="3">3</button><button class="ckey op" data-action="calc" data-key="+">+</button>' +
+              '<button class="ckey zero" data-action="calc" data-key="0">0</button><button class="ckey" data-action="calc" data-key=".">.</button><button class="ckey eq" data-action="calc" data-key="=">=</button>' +
+            '</div>' +
+            '<div class="actions"><button class="btn" data-action="copy">Copy result</button><button class="btn" data-action="save-calc">Save calculation</button></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Live working</h2><p>Step-by-step arithmetic trace.</p></div></div>' +
+          '<div class="panel-body"><div class="stat-card"><span>Current step</span><strong id="calcWorkFormula">Ready</strong><small id="calcWorkDesc">Enter a number and choose an operator.</small></div>' +
+          '<p class="explain">Keyboard: 0–9, +, −, *, /, Enter, Backspace, %, Escape. Dividing by zero is safely blocked.</p></div></aside>';
+        updateCalcView();
+      }
+      function doMath(a, op, b) {
+        if (op === "+") return a + b;
+        if (op === "-") return a - b;
+        if (op === "*") return a * b;
+        if (op === "/") return b === 0 ? { error: "Cannot divide by zero." } : a / b;
+        return a;
+      }
+      function updateCalcView() {
+        var c = state.calculator; if (!$("calculatorDisplay")) return;
+        $("calculatorDisplay").textContent = c.display;
+        $("calculatorExpression").textContent = c.expression;
+        $("calculatorError").textContent = c.error;
+        $("calculatorError").classList.toggle("hidden", !c.error);
+        $("calcWorkFormula").textContent = c.expression ? (c.expression + (c.expression.endsWith("=") ? " " + c.display : "")) : "Ready";
+        $("calcWorkDesc").textContent = c.error || (c.operator ? "Enter the next value and press =." : "Enter a number and choose an operator.");
+        workspace.querySelectorAll(".ckey.op").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.key === c.operator)); });
+      }
+      function calcKey(k) {
+        var c = state.calculator; c.error = "";
+        if (k === "clear") { c.display = "0"; c.accumulator = null; c.operator = null; c.waitingForOperand = true; c.expression = ""; }
+        else if (/^\d$/.test(k)) {
+          if (c.waitingForOperand) { if (!c.operator && c.expression.includes("=")) c.expression = ""; c.display = k; c.waitingForOperand = false; }
+          else if (c.display.length < 15) c.display = c.display === "0" ? k : c.display + k;
+        } else if (k === ".") {
+          if (c.waitingForOperand) { c.display = "0."; c.waitingForOperand = false; }
+          else if (!c.display.includes(".")) c.display += ".";
+        } else if (k === "sign") { if (Number(c.display) !== 0) c.display = String(-Number(c.display)); c.waitingForOperand = false; }
+        else if (k === "pct") { c.display = String(Number(c.display) / 100); c.waitingForOperand = false; }
+        else if (k === "del") { c.display = c.display.length <= 1 ? "0" : c.display.slice(0, -1); c.waitingForOperand = false; }
+        else if (["+", "-", "*", "/"].includes(k)) {
+          if (c.operator && !c.waitingForOperand) {
+            var r = doMath(c.accumulator, c.operator, Number(c.display));
+            if (typeof r === "object") { c.error = r.error; c.operator = null; c.accumulator = null; c.waitingForOperand = true; updateCalcView(); return; }
+            c.display = String(r); c.accumulator = r;
+          } else if (c.accumulator === null) c.accumulator = Number(c.display);
+          c.operator = k; c.expression = fmtNum(c.accumulator) + " " + k; c.waitingForOperand = true;
+        } else if (k === "=" && c.operator && c.accumulator !== null) {
+          var a = c.accumulator, b = Number(c.display), res = doMath(a, c.operator, b);
+          if (typeof res === "object") { c.error = res.error; c.operator = null; c.accumulator = null; c.waitingForOperand = true; updateCalcView(); return; }
+          c.expression = fmtNum(a) + " " + c.operator + " " + fmtNum(b) + " =";
+          c.display = String(res); c.accumulator = null; c.operator = null; c.waitingForOperand = true;
+        }
+        updateCalcView();
+      }
+
+      /* 2. Unit Converters (22 tools) */
+      function toBase(v, u, t) {
+        if (t.id === "fuel") {
+          if (v === 0) return 0; if (v < 0) return NaN;
+          if (u.id === "l100") return v; if (u.id === "kml") return 100 / v;
+          if (u.id === "mpgus") return 235.214583 / v; if (u.id === "mpguk") return 282.480936 / v;
+        }
+        return typeof u.scale === "number" ? v * u.scale + u.offset : v * u.factor;
+      }
+      function fromBase(v, u, t) {
+        if (t.id === "fuel") {
+          if (v === 0) return u.id === "l100" ? 0 : Infinity;
+          if (u.id === "l100") return v; if (u.id === "kml") return 100 / v;
+          if (u.id === "mpgus") return 235.214583 / v; if (u.id === "mpguk") return 282.480936 / v;
+        }
+        return typeof u.scale === "number" ? (v - u.offset) / u.scale : v / u.factor;
+      }
+      function renderUnits(t) {
+        var opts = function (sel) { return t.units.map(function (u) { return '<option value="' + esc(u.id) + '" ' + (u.id === sel ? "selected" : "") + '>' + esc(u.name) + ' (' + esc(u.symbol) + ')</option>'; }).join(""); };
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Convert ' + esc(t.title.toLowerCase()) + '</h2><p>Enter what you have and select the target unit.</p></div><span class="panel-code">UNIT</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="conv-row">' +
+              '<label><span class="flabel">I have</span><input id="unitAmount" class="inp num" type="number" step="any" value="1"><select id="fromUnit" class="sel">' + opts(t.defaults[0]) + '</select></label>' +
+              '<button class="swap-btn" type="button" data-action="swap-units" title="Swap units">⇄</button>' +
+              '<label><span class="flabel">I want</span><input id="unitResult" class="inp num" type="text" readonly><select id="toUnit" class="sel">' + opts(t.defaults[1]) + '</select></label>' +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Converted value</span><div id="answerValue" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<p id="unitError" class="formula hidden" role="alert"></p>' +
+            '<p class="formula"><strong>Formula</strong><span id="unitFormula"></span></p>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>How it works</h2><p>Base-unit conversion &amp; quick challenge.</p></div></div>' +
+          '<div class="panel-body">' +
+            '<button class="work-toggle" type="button" data-action="toggle-work" aria-expanded="false"><span>Show step-by-step working</span><span>＋</span></button>' +
+            '<div id="workingContent" class="work-content"></div>' +
+            '<div id="challengeBox" class="challenge"></div>' +
+          '</div></aside>' +
+          '<section class="panel panel-full"><div class="panel-head"><div><h2>Quick equivalents</h2><p>Using the value entered above</p></div></div><div class="panel-body"><div id="equivalents"></div></div></section>';
+        renderChallenge(t); calcUnits(t);
+      }
+      function renderChallenge(t) {
+        var box = $("challengeBox"); if (!box) return;
+        var f = t.units[Math.floor(Math.random() * t.units.length)], to = t.units[Math.floor(Math.random() * t.units.length)];
+        while (to.id === f.id) to = t.units[Math.floor(Math.random() * t.units.length)];
+        var amt = Math.floor(Math.random() * 10) + 2;
+        var ans = fmtNum(fromBase(toBase(amt, f, t), to, t)) + " " + to.symbol;
+        state.challenge = { toolId: t.id, answer: ans };
+        box.innerHTML = '<span class="rlabel">Quick challenge</span><strong>' + amt + ' ' + esc(f.symbol) + ' = ? ' + esc(to.symbol) + '</strong>' +
+          '<div id="challengeAnswer" class="challenge-ans hidden"></div>' +
+          '<div class="actions"><button class="btn btn-text" data-action="new-challenge">Another one</button><button class="btn btn-text" data-action="reveal-challenge">Check answer</button></div>';
+      }
+      function calcUnits(t) {
+        var aIn = $("unitAmount"), fSel = $("fromUnit"), tSel = $("toUnit"); if (!aIn) return;
+        var v = Number(aIn.value), f = t.units.find(function (u) { return u.id === fSel.value; }), to = t.units.find(function (u) { return u.id === tSel.value; });
+        var err = "", res = NaN, bv = NaN;
+        if (aIn.value.trim() === "" || !Number.isFinite(v)) err = "Enter a valid number.";
+        else if (f && to) {
+          bv = toBase(v, f, t); res = fromBase(bv, to, t);
+          if (t.id === "temperature" && bv < -273.15 - 1e-9) err = "Temperature cannot be below absolute zero (0 K / −273.15 °C).";
+          else if (t.id === "fuel" && v < 0) err = "Fuel economy cannot be negative.";
+          else if (!Number.isFinite(res)) err = "Cannot convert to a finite result.";
+        }
+        $("answerValue").textContent = err ? "—" : fmtNum(res) + " " + to.symbol;
+        $("unitResult").value = err ? "" : fmtNum(res);
+        $("unitResult").dataset.raw = err ? "" : String(res);
+        $("unitError").textContent = err; $("unitError").classList.toggle("hidden", !err);
+        $("unitFormula").textContent = t.id === "temperature" ? "Convert via Celsius (°C) to target scale."
+          : t.id === "fuel" ? "Reciprocal conversion via L/100 km."
+          : "1 " + f.symbol + " = " + fmtNum(fromBase(toBase(1, f, t), to, t), 7) + " " + to.symbol;
+        $("workingContent").innerHTML = err ? "Enter a valid number." : "1. Base value: " + fmtNum(bv) + "<br>2. Converted: <strong>" + fmtNum(res) + " " + esc(to.symbol) + "</strong>";
+        $("equivalents").innerHTML = err ? '<p class="empty-note">Enter a valid value above.</p>'
+          : '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Unit</th><th>Symbol</th><th>Equivalent</th></tr></thead><tbody>' +
+            t.units.filter(function (u) { return u.id !== f.id; }).slice(0, 6).map(function (u) {
+              return '<tr><td>' + esc(u.name) + '</td><td class="mono">' + esc(u.symbol) + '</td><td class="mono">' + fmtNum(fromBase(bv, u, t)) + '</td></tr>';
+            }).join("") + '</tbody></table></div>';
+      }
+
+      /* 3. Custom Conversion */
+      function renderCustom() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Custom unit converter</h2><p>Define any unit relationship and save reusable pairs.</p></div><span class="panel-code">CUSTOM</span></div>' +
+          '<div class="panel-body">' +
+            '<label><span class="flabel">Amount</span><input id="customAmount" class="inp num" type="number" step="any" value="5"></label>' +
+            '<div class="conv-row">' +
+              '<label><span class="flabel">From unit</span><input id="customFrom" class="inp" value="mile"></label>' +
+              '<button class="swap-btn" type="button" data-action="swap-custom">⇄</button>' +
+              '<label><span class="flabel">To unit</span><input id="customTo" class="inp" value="kilometer"></label>' +
+            '</div>' +
+            '<label><span class="flabel">Conversion factor (1 From = ? To)</span><input id="customFactor" class="inp num" type="number" step="any" value="1.609344"></label>' +
+            '<div class="result-box"><span class="rlabel">Converted value</span><div id="customAnswer" class="rval">—</div><p id="customFormula"></p></div>' +
+            '<p id="customError" class="formula hidden" role="alert"></p>' +
+            '<div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save calc</button><button class="btn btn-soft" data-action="save-pair">Save unit pair</button></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Examples &amp; notes</h2></div></div><div class="panel-body">' +
+            '<button class="work-toggle" type="button" data-action="mile-example"><span>Load mile → kilometer example</span><span>↗</span></button>' +
+            '<p class="explain">Uses a direct multiplier (suitable for length, weight, packaging, or custom rates).</p></div></aside>' +
+          '<section class="panel panel-full"><div class="panel-head"><div><h2>Saved unit pairs</h2></div></div><div class="panel-body" id="customPairList"></div></section>';
+        renderCustomPairs(); calcCustom();
+      }
+      function calcCustom() {
+        if (!$("customAmount")) return;
+        var a = Number($("customAmount").value), f = $("customFrom").value.trim(), t = $("customTo").value.trim(), k = Number($("customFactor").value);
+        var err = !Number.isFinite(a) ? "Enter a valid amount." : (!f || !t) ? "Name both units." : (!Number.isFinite(k) || k <= 0) ? "Factor must be > 0." : "";
+        $("customAnswer").textContent = err ? "—" : fmtNum(a * k) + " " + t;
+        $("customFormula").textContent = err ? "" : "1 " + f + " = " + fmtNum(k) + " " + t;
+        $("customError").textContent = err; $("customError").classList.toggle("hidden", !err);
+      }
+      function renderCustomPairs() {
+        var el = $("customPairList"); if (!el) return;
+        el.innerHTML = state.customConversions.length ? state.customConversions.map(function (c) {
+          return '<div class="list-item"><span class="mono">1 ' + esc(c.from) + ' = ' + fmtNum(c.factor) + ' ' + esc(c.to) + '</span>' +
+            '<div class="actions"><button class="btn btn-text" data-action="use-pair" data-id="' + esc(c.id) + '">Use</button><button class="btn btn-text" data-action="del-pair" data-id="' + esc(c.id) + '">Remove</button></div></div>';
+        }).join("") : '<p class="empty-note">No saved pairs yet.</p>';
+      }
+
+      /* 4. History */
+      function renderHistory() {
+        workspace.innerHTML =
+          '<section class="panel panel-full"><div class="panel-head"><div><h2>Saved calculations</h2><p>Stored locally on this device.</p></div><button class="btn btn-text" data-action="clear-history" ' + (state.history.length ? "" : "disabled") + '>Clear all</button></div>' +
+          '<div class="panel-body" id="historyList"></div></section>';
+        var el = $("historyList");
+        el.innerHTML = state.history.length ? state.history.map(function (h) {
+          return '<div class="list-item"><div><strong>' + esc(h.title) + '</strong><p>' + esc(h.summary) + '</p></div>' +
+            '<div class="actions"><span class="pill">' + esc(h.result) + '</span><button class="btn" data-action="open-hist" data-id="' + esc(h.id) + '">Open</button><button class="btn btn-text" data-action="del-hist" data-id="' + esc(h.id) + '">Remove</button></div></div>';
+        }).join("") : '<p class="empty-note">No saved calculations yet. Use “Save” in any tool to store one here.</p>';
+      }
+      function saveCalculation() {
+        var t = activeTool();
+        var rEl = workspace.querySelector(".rval, #calculatorDisplay");
+        var res = rEl ? rEl.textContent.trim() : "";
+        if (!res || res === "—") { showToast("Nothing to save yet."); return; }
+        var vals = [].slice.call(workspace.querySelectorAll("input[id], select[id]")).map(function (c) { return { id: c.id, value: c.value }; });
+        var entry = { id: String(Date.now()), toolId: t.id, title: t.title, summary: t.title + " → " + res, result: res, values: vals };
+        state.history = [entry].concat(state.history).slice(0, 25);
+        saveStored("ic-history", state.history);
+        showToast("Calculation saved.");
+      }
+
+      /* 5. SVG History Chart Helper */
+      function svgChart(pts, label, src) {
+        if (!pts.length) return '<p class="empty-note">No data points available.</p>';
+        var vals = pts.map(function (p) { return p.value; }), lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+        var pad = hi === lo ? Math.abs(hi || 1) * 0.05 : (hi - lo) * 0.1, min = lo - pad, max = hi + pad;
+        var L = 54, R = 620, T = 16, B = 158;
+        var x = function (i) { return L + (pts.length === 1 ? 0.5 : i / (pts.length - 1)) * (R - L); };
+        var y = function (v) { return B - ((v - min) / (max - min)) * (B - T); };
+        var d = pts.map(function (p, i) { return (i ? "L" : "M") + x(i).toFixed(1) + "," + y(p.value).toFixed(1); }).join(" ");
+        var first = pts[0].value, last = pts[pts.length - 1].value, pct = first ? ((last - first) / first) * 100 : 0;
+        var ticks = [min, (min + max) / 2, max];
+        return '<figure class="chart-fig"><svg viewBox="0 0 640 190" role="img" aria-label="' + esc(label) + '">' +
+          ticks.map(function (tk) { return '<line x1="' + L + '" y1="' + y(tk) + '" x2="' + R + '" y2="' + y(tk) + '" class="chart-grid"></line><text x="2" y="' + (y(tk) + 4) + '" class="chart-lbl">' + esc(fmtNum(tk, 5)) + '</text>'; }).join("") +
+          '<path d="' + d + '" class="chart-line"></path>' +
+          '<circle cx="' + x(0) + '" cy="' + y(first) + '" r="3.5" class="chart-pt"></circle>' +
+          '<circle cx="' + x(pts.length - 1) + '" cy="' + y(last) + '" r="3.5" class="chart-pt"></circle>' +
+          '<text x="' + L + '" y="180" class="chart-lbl">' + esc(pts[0].date.slice(0, 10)) + '</text>' +
+          '<text x="' + R + '" y="180" text-anchor="end" class="chart-lbl">' + esc(pts[pts.length - 1].date.slice(0, 10)) + '</text>' +
+          '</svg><figcaption class="chart-cap"><span>' + fmtNum(first, 5) + ' → ' + fmtNum(last, 5) + ' (' + (pct >= 0 ? "+" : "") + fmtNum(pct, 3) + '%)</span><span style="color:var(--subtle)">' + esc(src) + '</span></figcaption></figure>';
+      }
+
+      /* 6. Currency Converter */
+      function curOpts(sel) {
+        return currencyList.map(function (c) { return '<option value="' + c[0] + '" ' + (c[0] === sel ? "selected" : "") + '>' + c[0] + ' — ' + esc(c[1]) + '</option>'; }).join("");
+      }
+      function renderCurrency() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Currency converter</h2><p>Central-bank reference rates via Frankfurter.</p></div><span class="panel-code">FX</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="conv-row">' +
+              '<label><span class="flabel">Amount</span><input id="currencyAmount" class="inp num" type="number" step="any" value="100"><select id="currencyFrom" class="sel">' + curOpts("USD") + '</select></label>' +
+              '<button class="swap-btn" type="button" data-action="swap-fx">⇄</button>' +
+              '<label><span class="flabel">Converted</span><input id="currencyResult" class="inp num" type="text" readonly><select id="currencyTo" class="sel">' + curOpts("INR") + '</select></label>' +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Reference value</span><div id="currencyAnswer" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<p id="currencyFormula" class="formula"><strong>Rate</strong><span>Loading…</span></p>' +
+            '<div id="fxStatus" class="status-bar"><span class="dot"></span><span>Loading reference rates…</span></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>About FX rates</h2></div></div><div class="panel-body"><p>Reference rates come from Frankfurter (ECB). Banks may apply spreads or fees.</p><button class="btn btn-soft" data-action="refresh-fx">Refresh rates</button></div></aside>' +
+          '<section id="fxHistory" class="panel panel-full"></section>';
+        loadFx().then(calcFx); loadFxHistory();
+      }
+      async function loadFx(force) {
+        var st = $("fxStatus");
+        if (!force && state.fx && Date.now() - state.fx.ts < 300000) { updateFxBadge(); return; }
+        try {
+          var d = await fetchJson("https://api.frankfurter.dev/v1/latest?base=USD", "Frankfurter");
+          state.fx = { date: d.date, rates: Object.assign({ USD: 1 }, d.rates), ts: Date.now() };
+          state.fxStatus = "ready";
+        } catch (e) {
+          state.fxStatus = "error"; state.fxError = e.message;
+        }
+        updateFxBadge();
+      }
+      function updateFxBadge() {
+        var st = $("fxStatus"); if (!st) return;
+        if (state.fxStatus === "ready" && state.fx) st.innerHTML = '<span class="dot is-live"></span><span>Reference rates dated ' + esc(fmtDate(state.fx.date)) + ' · Frankfurter</span>';
+        else if (state.fxStatus === "error") st.innerHTML = '<span class="dot is-err"></span><span>Live FX unavailable (' + esc(state.fxError) + ').</span>';
+      }
+      function calcFx() {
+        if (!$("currencyAmount")) return;
+        var amt = Number($("currencyAmount").value), f = $("currencyFrom").value, t = $("currencyTo").value, r = state.fx && state.fx.rates;
+        if (!r || !Number.isFinite(amt) || !r[f] || !r[t]) { $("currencyAnswer").textContent = "—"; return; }
+        var val = amt * r[t] / r[f];
+        $("currencyAnswer").textContent = fmtMoney(val, t, 4);
+        $("currencyResult").value = fmtNum(val, 6);
+        $("currencyResult").dataset.raw = String(val);
+        $("currencyFormula").innerHTML = "<strong>Rate</strong><span>1 " + f + " = " + fmtNum(r[t] / r[f], 6) + " " + t + " (" + esc(fmtDate(state.fx.date)) + ")</span>";
+      }
+      async function loadFxHistory() {
+        var box = $("fxHistory"); if (!box || !$("currencyFrom")) return;
+        var f = $("currencyFrom").value, t = $("currencyTo").value, rng = state.fxHistoryRange;
+        var rangeBtns = [["1m", "1 month"], ["3m", "3 months"], ["1y", "1 year"]].map(function (b) {
+          return '<button class="btn" data-action="fx-range" data-range="' + b[0] + '" aria-pressed="' + (b[0] === rng) + '">' + b[1] + '</button>';
+        }).join("");
+        box.innerHTML = '<div class="panel-head"><div><h2>Rate history (1 ' + f + ' → ' + t + ')</h2></div><div class="actions">' + rangeBtns + '</div></div><div class="panel-body" id="fxChartBody"><p class="empty-note">Loading chart…</p></div>';
+        try {
+          var days = rng === "1y" ? 365 : rng === "3m" ? 90 : 30;
+          var end = new Date(), start = new Date(end.getTime() - days * 86400000);
+          var pts = f === t ? [{ date: start.toISOString().slice(0, 10), value: 1 }, { date: end.toISOString().slice(0, 10), value: 1 }]
+            : Object.entries((await fetchJson("https://api.frankfurter.dev/v1/" + start.toISOString().slice(0, 10) + ".." + end.toISOString().slice(0, 10) + "?base=" + f + "&symbols=" + t, "FX History")).rates || {})
+              .map(function (e) { return { date: e[0], value: Number(e[1][t]) }; }).filter(function (p) { return Number.isFinite(p.value); }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+          if ($("fxChartBody")) $("fxChartBody").innerHTML = svgChart(pts, f + " to " + t, "Frankfurter");
+        } catch (e) {
+          if ($("fxChartBody")) $("fxChartBody").innerHTML = '<p class="empty-note">Could not load rate history (' + esc(e.message) + ').</p>';
+        }
+      }
+
+      /* 7. Gold & Silver */
+      function renderMetals() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Gold &amp; silver spot estimator</h2><p>Indicative spot value from weight (not a dealer quote).</p></div><span class="panel-code">METALS</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Metal</span><select id="metalCode" class="sel"><option value="XAU">Gold (XAU)</option><option value="XAG">Silver (XAG)</option></select></label>' +
+              '<label><span class="flabel">Weight</span><input id="metalWeight" class="inp num" type="number" step="any" value="10"></label>' +
+              '<label><span class="flabel">Unit</span><select id="metalUnit" class="sel"><option value="g">Gram (g)</option><option value="kg">Kilogram (kg)</option><option value="ozt">Troy ounce (ozt)</option></select></label>' +
+              '<label><span class="flabel">Currency</span><select id="metalCurrency" class="sel">' + curOpts("USD") + '</select></label>' +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Indicative spot value</span><div id="metalResult" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<div id="metalStatus" class="status-bar"><span class="dot"></span><span>Loading spot price…</span></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Spot note</h2></div></div><div class="panel-body"><p>1 troy ounce = 31.1034768 g. Spot price excludes making charges, purity adjustments, and local taxes.</p><button class="btn btn-soft" data-action="refresh-metal">Refresh spot</button></div></aside>' +
+          '<section id="metalHistory" class="panel panel-full"></section>';
+        loadMetalSpot(); loadMetalHistory();
+      }
+      async function loadMetalSpot(force) {
+        var code = $("metalCode") ? $("metalCode").value : "XAU";
+        if (!force && state.spots[code] && Date.now() - state.spots[code].ts < 60000) { calcMetal(); return; }
+        try {
+          var d = await fetchJson("https://api.gold-api.com/price/" + code, "Gold-API");
+          state.spots[code] = { price: Number(d.price), updatedAt: d.updatedAt, ts: Date.now() };
+          if ($("metalStatus")) $("metalStatus").innerHTML = '<span class="dot is-live"></span><span>' + metalNames[code] + ' spot: ' + fmtMoney(d.price, "USD", 2) + ' / ozt</span>';
+          calcMetal();
+        } catch (e) {
+          if ($("metalStatus")) $("metalStatus").innerHTML = '<span class="dot is-err"></span><span>Spot feed unavailable (' + esc(e.message) + ').</span>';
+        }
+      }
+      function calcMetal() {
+        if (!$("metalWeight")) return;
+        var code = $("metalCode").value, w = Number($("metalWeight").value), u = $("metalUnit").value, cur = $("metalCurrency").value;
+        var spot = state.spots[code];
+        if (!spot || !Number.isFinite(w) || w < 0) { $("metalResult").textContent = "—"; return; }
+        if (cur !== "USD" && !(state.fx && state.fx.rates && state.fx.rates[cur])) { loadFx().then(calcMetal); return; }
+        var ozt = (u === "kg" ? w * 1000 : u === "ozt" ? w * 31.1034768 : w) / 31.1034768;
+        var rate = cur === "USD" ? 1 : state.fx.rates[cur];
+        $("metalResult").textContent = fmtMoney(ozt * spot.price * rate, cur, 2);
+      }
+      async function loadMetalHistory() {
+        var box = $("metalHistory"); if (!box || !$("metalCode")) return;
+        var code = $("metalCode").value, rng = state.metalHistoryRange;
+        var btns = [["1m", "1 month"], ["3m", "3 months"], ["1y", "1 year"]].map(function (b) {
+          return '<button class="btn" data-action="metal-range" data-range="' + b[0] + '" aria-pressed="' + (b[0] === rng) + '">' + b[1] + '</button>';
+        }).join("");
+        box.innerHTML = '<div class="panel-head"><div><h2>' + metalNames[code] + ' price history (USD/ozt)</h2></div><div class="actions">' + btns + '</div></div><div class="panel-body" id="metalChartBody"><p class="empty-note">Loading history…</p></div>';
+        try {
+          var d = await fetchJson("https://standardbullion.com/api/v1/market/history?metal=" + code + "&range=" + rng, "Standard Bullion");
+          var pts = (d.points || []).map(function (p) { return { date: p.t, value: Number(p.price) }; }).filter(function (p) { return p.date && Number.isFinite(p.value); });
+          if ($("metalChartBody")) $("metalChartBody").innerHTML = svgChart(pts, metalNames[code], "Standard Bullion");
+        } catch (e) {
+          if ($("metalChartBody")) $("metalChartBody").innerHTML = '<p class="empty-note">Could not load metal history (' + esc(e.message) + ').</p>';
+        }
+      }
+
+      /* 8. Index Calculator */
+      function renderIndex() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Index movement &amp; rebasing</h2></div><span class="panel-code">INDEX</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Starting level</span><input id="indexStart" class="inp num" type="number" step="any" value="1000"></label>' +
+              '<label><span class="flabel">Ending level</span><input id="indexEnd" class="inp num" type="number" step="any" value="1125"></label>' +
+              '<label class="span-full"><span class="flabel">Rebase start to</span><input id="indexBase" class="inp num" type="number" step="any" value="100"></label>' +
+            '</div>' +
+            '<div class="grid-2"><div class="stat-card"><span>Point change</span><strong id="indexPoints">—</strong></div><div class="stat-card"><span>Percentage change</span><strong id="indexPercent">—</strong></div></div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Rebased ending level</span><div id="indexRebased" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy result</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<p id="indexError" class="formula hidden" role="alert"></p>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Formula</h2></div></div><div class="panel-body"><p>Change % = (End − Start) ÷ Start × 100. Rebased = End ÷ Start × New Base.</p></div></aside>';
+        calcIndex();
+      }
+      function calcIndex() {
+        if (!$("indexStart")) return;
+        var s = Number($("indexStart").value), e = Number($("indexEnd").value), b = Number($("indexBase").value);
+        var err = (!Number.isFinite(s) || !Number.isFinite(e) || !Number.isFinite(b)) ? "Enter valid numbers." : s === 0 ? "Start level cannot be 0." : "";
+        $("indexPoints").textContent = err ? "—" : fmtNum(e - s);
+        $("indexPercent").textContent = err ? "—" : fmtNum(((e - s) / s) * 100, 5) + "%";
+        $("indexRebased").textContent = err ? "—" : fmtNum((e / s) * b);
+        $("indexError").textContent = err; $("indexError").classList.toggle("hidden", !err);
+      }
+
+      /* 9. Credit Card Bill Planner */
+      function dateOff(days) {
+        var d = new Date(); d.setDate(d.getDate() + days);
+        return d.toISOString().slice(0, 10);
+      }
+      function renderCreditCard() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Credit card bill planner (INR)</h2><p>Purchase GST, statement dates, overdue interest &amp; GST on interest.</p></div><span class="panel-code">CARD</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Purchase before GST (₹)</span><input id="cardAmount" class="inp num" type="number" min="0" step="any" value="15000"></label>' +
+              '<label><span class="flabel">Purchase GST (%)</span><input id="cardPGst" class="inp num" type="number" min="0" max="100" step="any" value="18"></label>' +
+              '<label><span class="flabel">Monthly interest (%)</span><input id="cardRate" class="inp num" type="number" min="0" max="100" step="any" value="3.5"></label>' +
+              '<label><span class="flabel">GST on interest (%)</span><input id="cardIGst" class="inp num" type="number" min="0" max="100" step="any" value="18"></label>' +
+              '<label><span class="flabel">Purchase date</span><input id="cardPDate" class="inp" type="date" value="' + dateOff(-12) + '"></label>' +
+              '<label><span class="flabel">Statement date</span><input id="cardSDate" class="inp" type="date" value="' + dateOff(0) + '"></label>' +
+              '<label><span class="flabel">Due date</span><input id="cardDDate" class="inp" type="date" value="' + dateOff(20) + '"></label>' +
+              '<label><span class="flabel">Planned payment</span><input id="cardPayDate" class="inp" type="date" value="' + dateOff(25) + '"></label>' +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Estimated total payable</span><div id="cardTotal" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<dl class="dl-list" id="cardBreakdown"></dl>' +
+            '<p id="cardError" class="formula hidden" role="alert"></p>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>How it estimates</h2></div></div><div class="panel-body"><p>Uses simple daily interest (monthly rate ÷ 30) on overdue days after the due date, plus GST on purchase and interest. Check your issuer statement for exact billing rules.</p></div></aside>';
+        calcCreditCard();
+      }
+      function calcCreditCard() {
+        if (!$("cardAmount")) return;
+        var amt = Number($("cardAmount").value), pg = Number($("cardPGst").value), rt = Number($("cardRate").value), ig = Number($("cardIGst").value);
+        var d1 = new Date($("cardPDate").value), d2 = new Date($("cardSDate").value), d3 = new Date($("cardDDate").value), d4 = new Date($("cardPayDate").value);
+        var err = "";
+        if (!Number.isFinite(amt) || amt < 0) err = "Enter a valid purchase amount.";
+        else if (isNaN(d1) || isNaN(d2) || isNaN(d3) || isNaN(d4)) err = "Select valid dates.";
+        else if (d2 < d1) err = "Statement date must be on or after purchase date.";
+        else if (d3 < d2 || d4 < d2) err = "Due and payment dates must be on or after statement date.";
+        $("cardError").textContent = err; $("cardError").classList.toggle("hidden", !err);
+        if (err) { $("cardTotal").textContent = "—"; $("cardBreakdown").innerHTML = ""; return; }
+        var pGst = amt * pg / 100, stmt = amt + pGst;
+        var late = Math.max(0, Math.round((d4 - d3) / 86400000));
+        var interest = stmt * (rt / 100) * (late / 30), iGst = interest * ig / 100, tot = stmt + interest + iGst;
+        $("cardTotal").textContent = fmtMoney(tot, "INR", 2);
+        $("cardBreakdown").innerHTML =
+          '<div><dt>Purchase GST</dt><dd>' + fmtMoney(pGst, "INR", 2) + '</dd></div>' +
+          '<div><dt>Statement total</dt><dd>' + fmtMoney(stmt, "INR", 2) + '</dd></div>' +
+          '<div><dt>Days overdue</dt><dd>' + late + ' days</dd></div>' +
+          '<div><dt>Late interest</dt><dd>' + fmtMoney(interest, "INR", 2) + '</dd></div>' +
+          '<div><dt>GST on interest</dt><dd>' + fmtMoney(iGst, "INR", 2) + '</dd></div>';
+      }
+
+      /* 10. Compound & Simple Interest */
+      function renderInterest() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Interest calculator</h2></div><span class="panel-code">INTEREST</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Principal</span><input id="intAmt" class="inp num" type="number" min="0" value="10000"></label>' +
+              '<label><span class="flabel">Currency</span><select id="intCur" class="sel"><option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></label>' +
+              '<label><span class="flabel">Annual rate (%)</span><input id="intRate" class="inp num" type="number" min="0" step="any" value="7.5"></label>' +
+              '<label><span class="flabel">Years</span><input id="intYears" class="inp num" type="number" min="0" step="any" value="5"></label>' +
+              '<label><span class="flabel">Type</span><select id="intType" class="sel"><option value="compound">Compound</option><option value="simple">Simple</option></select></label>' +
+              '<label><span class="flabel">Compounding</span><select id="intFreq" class="sel"><option value="1">Yearly</option><option value="4">Quarterly</option><option value="12" selected>Monthly</option><option value="365">Daily</option></select></label>' +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Total amount</span><div id="intTotal" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<div class="stat-card"><span>Interest earned</span><strong id="intEarned">—</strong></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Simple vs Compound</h2></div></div><div class="panel-body"><p>Simple interest grows linearly on principal only. Compound interest adds accrued interest back into the balance each period.</p></div></aside>';
+        calcInterest();
+      }
+      function calcInterest() {
+        if (!$("intAmt")) return;
+        var p = Number($("intAmt").value), r = Number($("intRate").value), y = Number($("intYears").value), f = Number($("intFreq").value), cur = $("intCur").value, tp = $("intType").value;
+        $("intFreq").disabled = tp === "simple";
+        if (!Number.isFinite(p) || !Number.isFinite(r) || !Number.isFinite(y) || p < 0 || r < 0 || y < 0) { $("intTotal").textContent = "—"; return; }
+        var tot = tp === "simple" ? p * (1 + (r / 100) * y) : p * Math.pow(1 + (r / 100) / f, f * y);
+        $("intTotal").textContent = fmtMoney(tot, cur, 2);
+        $("intEarned").textContent = fmtMoney(tot - p, cur, 2);
+      }
+
+      /* 11. EMI Calculator */
+      function renderEmi() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>EMI loan calculator</h2></div><span class="panel-code">LOAN</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Loan amount</span><input id="emiAmt" class="inp num" type="number" min="0" value="250000"></label>' +
+              '<label><span class="flabel">Currency</span><select id="emiCur" class="sel"><option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></label>' +
+              '<label><span class="flabel">Annual rate (%)</span><input id="emiRate" class="inp num" type="number" min="0" step="any" value="9"></label>' +
+              '<label><span class="flabel">Term (months)</span><input id="emiMonths" class="inp num" type="number" min="1" max="600" value="36"></label>' +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Monthly EMI</span><div id="emiPay" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<div class="grid-2"><div class="stat-card"><span>Total repayment</span><strong id="emiTot">—</strong></div><div class="stat-card"><span>Total interest</span><strong id="emiInt">—</strong></div></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Reducing balance</h2></div></div><div class="panel-body"><p>Standard fixed-rate EMI formula: P × r × (1+r)^n ÷ ((1+r)^n − 1).</p></div></aside>';
+        calcEmi();
+      }
+      function calcEmi() {
+        if (!$("emiAmt")) return;
+        var p = Number($("emiAmt").value), r = Number($("emiRate").value) / 1200, n = Number($("emiMonths").value), cur = $("emiCur").value;
+        if (!Number.isFinite(p) || !Number.isFinite(r) || !Number.isInteger(n) || n < 1 || p < 0 || r < 0) { $("emiPay").textContent = "—"; return; }
+        var emi = r === 0 ? p / n : (p * r) / (1 - Math.pow(1 + r, -n));
+        $("emiPay").textContent = fmtMoney(emi, cur, 2);
+        $("emiTot").textContent = fmtMoney(emi * n, cur, 2);
+        $("emiInt").textContent = fmtMoney(emi * n - p, cur, 2);
+      }
+
+      /* 12. BMI Calculator */
+      function renderBmi() {
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Adult BMI calculator</h2></div><span class="panel-code">HEALTH</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Height</span><input id="bmiH" class="inp num" type="number" min="0" step="any" value="170"></label>' +
+              '<label><span class="flabel">Height unit</span><select id="bmiHU" class="sel"><option value="cm">Centimeters</option><option value="in">Inches</option><option value="ft">Feet</option></select></label>' +
+              '<label><span class="flabel">Weight</span><input id="bmiW" class="inp num" type="number" min="0" step="any" value="70"></label>' +
+              '<label><span class="flabel">Weight unit</span><select id="bmiWU" class="sel"><option value="kg">Kilograms</option><option value="lb">Pounds</option></select></label>' +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Adult BMI</span><div id="bmiRes" class="rval">—</div><p id="bmiCat"></p></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<p class="formula"><strong>Formula</strong><span id="bmiForm">BMI = weight (kg) ÷ height (m)²</span></p>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Screening limits</h2></div></div><div class="panel-body"><p>BMI is a general adult screening ratio, not a medical diagnosis. It does not directly measure body fat or muscle mass, and is not for children/teens.</p></div></aside>';
+        calcBmi();
+      }
+      function calcBmi() {
+        if (!$("bmiH")) return;
+        var h = Number($("bmiH").value), hu = $("bmiHU").value, w = Number($("bmiW").value), wu = $("bmiWU").value;
+        if (!Number.isFinite(h) || !Number.isFinite(w) || h <= 0 || w <= 0) { $("bmiRes").textContent = "—"; return; }
+        var hm = hu === "cm" ? h / 100 : hu === "in" ? h * 0.0254 : h * 0.3048;
+        var wk = wu === "kg" ? w : w * 0.45359237;
+        var bmi = wk / (hm * hm);
+        $("bmiRes").textContent = fmtNum(bmi, 4);
+        $("bmiCat").textContent = bmi < 18.5 ? "Below typical adult range (< 18.5)" : bmi < 25 ? "Within typical adult range (18.5–24.9)" : bmi < 30 ? "Above typical adult range (25–29.9)" : "High adult BMI range (≥ 30)";
+        $("bmiForm").textContent = fmtNum(wk, 4) + " kg ÷ (" + fmtNum(hm, 4) + " m)² = " + fmtNum(bmi, 4);
+      }
+
+      /* 13. Fashion & Sizing — Clothing Size Finder */
+      function renderClothingSize() {
+        var m = state.clothingMode;
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Clothing size finder</h2><p>Match body measurements &amp; indices or convert country standards.</p></div><span class="panel-code">APPAREL</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="mode-switch">' +
+              '<button class="mode-btn" data-action="cloth-mode" data-mode="measure" aria-pressed="' + (m === "measure") + '">From Body Measurements</button>' +
+              '<button class="mode-btn" data-action="cloth-mode" data-mode="convert" aria-pressed="' + (m === "convert") + '">Convert Country Sizes</button>' +
+            '</div>' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Section</span><select id="clSec" class="sel"><option value="men">Men\'s</option><option value="women">Women\'s</option><option value="unisex">Unisex</option></select></label>' +
+              (m === "measure"
+                ? '<label><span class="flabel">Garment type</span><select id="clGarment" class="sel"><option value="tops">Tops / Shirts</option><option value="bottoms">Bottoms / Trousers</option><option value="outer">Dresses / Outerwear</option></select></label>' +
+                  '<label><span class="flabel">Fit preference</span><select id="clFit" class="sel"><option value="slim">Slim fit</option><option value="regular" selected>Regular fit</option><option value="relaxed">Relaxed / Oversized</option></select></label>' +
+                  '<label><span class="flabel">Unit</span><select id="clUnit" class="sel"><option value="cm">Centimeters (cm)</option><option value="in">Inches (in)</option></select></label>' +
+                  '<label><span class="flabel">Height</span><input id="clHeight" class="inp num" type="number" step="any" value="175"></label>' +
+                  '<label><span class="flabel">Chest / Bust</span><input id="clChest" class="inp num" type="number" step="any" value="98"></label>' +
+                  '<label><span class="flabel">Waist</span><input id="clWaist" class="inp num" type="number" step="any" value="84"></label>' +
+                  '<label><span class="flabel">Hips</span><input id="clHip" class="inp num" type="number" step="any" value="99"></label>'
+                : '<label><span class="flabel">Known standard</span><select id="clFromStd" class="sel"><option value="intl">International (XS–3XL)</option><option value="inS">India (IN)</option><option value="us">US</option><option value="uk">UK</option><option value="eu">EU</option><option value="jp">Japan (JP)</option></select></label>' +
+                  '<label class="span-full"><span class="flabel">Select size</span><select id="clFromVal" class="sel"></select></label>'
+              ) +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Recommended size</span><div id="clPrimary" class="rval">—</div><p id="clNote"></p></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<div id="clCards" class="grid-3"></div>' +
+            '<div id="clIndices" class="grid-3"></div>' +
+            '<div id="clAdvice" class="fit-alert hidden"></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>Measuring guide</h2></div></div><div class="panel-body">' +
+            '<p><strong>Chest/Bust:</strong> Measure horizontally around the fullest part.</p>' +
+            '<p><strong>Waist:</strong> Measure at the narrowest natural crease above the navel.</p>' +
+            '<p><strong>Hips:</strong> Stand with feet together and measure the widest seat circumference.</p>' +
+            '<p class="explain">Sizing varies slightly by brand and fabric stretch. Between sizes, size up for woven fabrics or relaxed comfort.</p>' +
+          '</div></aside>' +
+          '<section class="panel panel-full"><div class="panel-head"><div><h2>Country size chart</h2><p>Highlighted row matches your calculation</p></div></div><div class="panel-body"><div id="clTable"></div></div></section>';
+        if (m === "convert") populateClothingSelect();
+        calcClothingSize();
+      }
+      function populateClothingSelect() {
+        var sec = $("clSec") ? $("clSec").value : "men", std = $("clFromStd") ? $("clFromStd").value : "intl", sel = $("clFromVal");
+        if (!sel) return;
+        var chart = clothingCharts[sec] || clothingCharts.men;
+        sel.innerHTML = chart.map(function (r, i) { return '<option value="' + i + '">' + esc(r[std]) + ' (' + esc(r.intl) + ')</option>'; }).join("");
+        sel.value = "2";
+      }
+      function matchBand(val, chart, key) {
+        for (var i = 0; i < chart.length; i++) {
+          if (val <= chart[i][key][1]) return i;
+        }
+        return chart.length - 1;
+      }
+      function calcClothingSize() {
+        var secEl = $("clSec"); if (!secEl) return;
+        var chart = clothingCharts[secEl.value] || clothingCharts.men;
+        var idx = 2, advice = "", indicesHtml = "";
+
+        if (state.clothingMode === "measure") {
+          var k = $("clUnit").value === "in" ? 2.54 : 1;
+          var h = Number($("clHeight").value) * k, ch = Number($("clChest").value) * k, wa = Number($("clWaist").value) * k, hi = Number($("clHip").value) * k;
+          var gar = $("clGarment").value, fit = $("clFit").value;
+          var iC = matchBand(ch, chart, "chest"), iW = matchBand(wa, chart, "waist"), iH = matchBand(hi, chart, "hip");
+          idx = gar === "tops" ? Math.max(iC, Math.round((iC + iW) / 2)) : gar === "bottoms" ? Math.max(iW, iH) : Math.max(iC, iW, iH);
+          if (fit === "relaxed") idx = Math.min(chart.length - 1, idx + 1);
+          if (fit === "slim" && idx > 0) {
+            var mid = (chart[idx].chest[0] + chart[idx].chest[1]) / 2;
+            if (ch < mid - 1.5) idx -= 1;
+          }
+          var whr = hi > 0 ? wa / hi : 0;
+          var drop = ch - wa;
+          var lenLabel = h < 164 ? "Petite / Short length" : h > 183 ? "Tall / Long length" : "Regular length";
+          indicesHtml =
+            '<div class="stat-card"><span>Waist-to-Hip (WHR)</span><strong>' + fmtNum(whr, 3) + '</strong><small>' + (whr < 0.8 ? "Curvy / tapered" : whr > 0.92 ? "Straight / athletic" : "Balanced") + '</small></div>' +
+            '<div class="stat-card"><span>Chest−Waist Drop</span><strong>' + fmtNum(drop, 3) + ' cm</strong><small>' + (drop >= 15 ? "Athletic V-taper" : drop <= 6 ? "Relaxed midsection" : "Standard drop") + '</small></div>' +
+            '<div class="stat-card"><span>Height / Length</span><strong>' + fmtNum(h, 4) + ' cm</strong><small>' + lenLabel + '</small></div>';
+          if (Math.abs(iC - iW) >= 2 || Math.abs(iW - iH) >= 2) {
+            advice = "Split-size note: Your chest (" + chart[iC].intl + "), waist (" + chart[iW].intl + "), and hip (" + chart[iH].intl + ") fall in different bands. Fit the largest key area and tailor if needed.";
+          }
+        } else {
+          idx = Number($("clFromVal") ? $("clFromVal").value : 2) || 0;
+        }
+
+        var row = chart[idx] || chart[2];
+        $("clPrimary").textContent = row.intl + " (IN " + row.inS + " · EU " + row.eu + ")";
+        $("clNote").textContent = "Chest " + row.chest[0] + "–" + row.chest[1] + " cm · Waist " + row.waist[0] + "–" + row.waist[1] + " cm · Hip " + row.hip[0] + "–" + row.hip[1] + " cm";
+        $("clCards").innerHTML = [
+          ["International", row.intl, true], ["India (IN)", row.inS, false], ["US", row.us, false],
+          ["UK", row.uk, false], ["EU", row.eu, false], ["Japan (JP)", row.jp, false]
+        ].map(function (c) { return '<div class="stat-card ' + (c[2] ? "is-primary" : "") + '"><span>' + c[0] + '</span><strong>' + esc(c[1]) + '</strong></div>'; }).join("");
+        $("clIndices").innerHTML = indicesHtml;
+        $("clAdvice").textContent = advice; $("clAdvice").classList.toggle("hidden", !advice);
+        $("clTable").innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Intl</th><th>IN</th><th>US</th><th>UK</th><th>EU</th><th>JP</th><th>Chest (cm)</th><th>Waist (cm)</th><th>Hip (cm)</th></tr></thead><tbody>' +
+          chart.map(function (r, i) {
+            return '<tr class="' + (i === idx ? "is-matched" : "") + '"><td>' + r.intl + '</td><td>' + r.inS + '</td><td>' + r.us + '</td><td>' + r.uk + '</td><td>' + r.eu + '</td><td>' + r.jp + '</td><td>' + r.chest[0] + '–' + r.chest[1] + '</td><td>' + r.waist[0] + '–' + r.waist[1] + '</td><td>' + r.hip[0] + '–' + r.hip[1] + '</td></tr>';
+          }).join("") + '</tbody></table></div>';
+      }
+
+      /* 14. Fashion & Sizing — Footwear & Shoe Size Finder */
+      function renderShoeSize() {
+        var m = state.shoeMode;
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Footwear &amp; shoe size finder</h2><p>Calculate from foot length, width index &amp; toe room or convert IN/UK/US/EU/JP/CN.</p></div><span class="panel-code">FOOTWEAR</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="mode-switch">' +
+              '<button class="mode-btn" data-action="shoe-mode" data-mode="measure" aria-pressed="' + (m === "measure") + '">From Foot Length &amp; Width</button>' +
+              '<button class="mode-btn" data-action="shoe-mode" data-mode="convert" aria-pressed="' + (m === "convert") + '">Convert Shoe Sizes</button>' +
+            '</div>' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Category</span><select id="shSec" class="sel"><option value="men">Men\'s</option><option value="women">Women\'s</option><option value="kids">Kids / Youth</option></select></label>' +
+              (m === "measure"
+                ? '<label><span class="flabel">Shoe type (toe allowance)</span><select id="shType" class="sel"><option value="0.5">Everyday / Casual (+0.5 cm)</option><option value="0.3">Formal / Dress (+0.3 cm)</option><option value="1.0">Running / Sports (+1.0 cm)</option></select></label>' +
+                  '<label><span class="flabel">Unit</span><select id="shUnit" class="sel"><option value="cm">Centimeters (cm)</option><option value="mm">Millimeters (mm)</option><option value="in">Inches (in)</option></select></label>' +
+                  '<label><span class="flabel">Foot length (heel to toe)</span><input id="shLen" class="inp num" type="number" step="any" value="26.2"></label>' +
+                  '<label class="span-full"><span class="flabel">Foot width (optional, for width index)</span><input id="shWid" class="inp num" type="number" step="any" value="10.2"></label>'
+                : '<label><span class="flabel">Known standard</span><select id="shFromStd" class="sel"><option value="inS">India (IN)</option><option value="uk">UK</option><option value="us">US</option><option value="eu">EU</option><option value="jp">Japan / CM</option><option value="cn">China (CN)</option></select></label>' +
+                  '<label class="span-full"><span class="flabel">Select size</span><select id="shFromVal" class="sel"></select></label>'
+              ) +
+            '</div>' +
+            '<div class="result-box-row"><div><span class="rlabel">Recommended shoe size</span><div id="shPrimary" class="rval">—</div><p id="shNote"></p></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+            '<div id="shCards" class="grid-3"></div>' +
+            '<div id="shWidthInfo" class="fit-alert hidden"></div>' +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>How to measure your foot</h2></div></div><div class="panel-body">' +
+            '<p>1. Stand on a sheet of paper with your heel lightly touching a wall.</p>' +
+            '<p>2. Mark the tip of your longest toe and measure heel-to-mark length.</p>' +
+            '<p>3. Measure both feet in the evening and use the larger measurement.</p>' +
+          '</div></aside>' +
+          '<section class="panel panel-full"><div class="panel-head"><div><h2>Footwear conversion table</h2></div></div><div class="panel-body"><div id="shTable"></div></div></section>';
+        if (m === "convert") populateShoeSelect();
+        calcShoeSize();
+      }
+      function populateShoeSelect() {
+        var sec = $("shSec") ? $("shSec").value : "men", std = $("shFromStd") ? $("shFromStd").value : "inS", sel = $("shFromVal");
+        if (!sel) return;
+        var chart = shoeCharts[sec] || shoeCharts.men;
+        sel.innerHTML = chart.map(function (r, i) { return '<option value="' + i + '">' + esc(r[std]) + ' (EU ' + esc(r.eu) + ' · ' + r.cm + ' cm)</option>'; }).join("");
+        sel.value = String(Math.min(4, chart.length - 1));
+      }
+      function calcShoeSize() {
+        var secEl = $("shSec"); if (!secEl) return;
+        var chart = shoeCharts[secEl.value] || shoeCharts.men;
+        var idx = 0, wMsg = "";
+        if (state.shoeMode === "measure") {
+          var u = $("shUnit").value, k = u === "mm" ? 0.1 : u === "in" ? 2.54 : 1;
+          var lenCm = Number($("shLen").value) * k, allow = Number($("shType").value) || 0.5;
+          var targetCm = lenCm + allow;
+          idx = chart.length - 1;
+          for (var i = 0; i < chart.length; i++) { if (targetCm <= chart[i].cm + 0.15) { idx = i; break; } }
+          var widCm = Number($("shWid").value) * k;
+          if (widCm > 0 && lenCm > 0) {
+            var fwi = (widCm / lenCm) * 100;
+            var wCode = secEl.value === "women"
+              ? (fwi < 36 ? "Narrow (2A)" : fwi <= 39.5 ? "Standard (B)" : fwi <= 42 ? "Wide (D)" : "Extra Wide (2E)")
+              : (fwi < 36.5 ? "Narrow (B)" : fwi <= 40.5 ? "Standard (D)" : fwi <= 43 ? "Wide (2E)" : "Extra Wide (4E)");
+            wMsg = "Foot Width Index: " + fmtNum(fwi, 3) + "% → " + wCode + " width. Target insole length: " + fmtNum(targetCm, 4) + " cm.";
+          }
+        } else {
+          idx = Number($("shFromVal") ? $("shFromVal").value : 0) || 0;
+        }
+        var row = chart[idx] || chart[0];
+        $("shPrimary").textContent = "IN/UK " + row.inS + " · US " + row.us + " · EU " + row.eu;
+        $("shNote").textContent = "Mondopoint / JP: " + row.jp + " cm · CN: " + row.cn;
+        $("shCards").innerHTML = [
+          ["India (IN)", row.inS, true], ["UK", row.uk, false], ["US", row.us, false],
+          ["EU", row.eu, false], ["Japan / CM", row.jp, false], ["China (CN)", row.cn, false]
+        ].map(function (c) { return '<div class="stat-card ' + (c[2] ? "is-primary" : "") + '"><span>' + c[0] + '</span><strong>' + esc(c[1]) + '</strong></div>'; }).join("");
+        $("shWidthInfo").textContent = wMsg; $("shWidthInfo").classList.toggle("hidden", !wMsg);
+        $("shTable").innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>CM / JP</th><th>IN</th><th>UK</th><th>US</th><th>EU</th><th>CN</th></tr></thead><tbody>' +
+          chart.map(function (r, i) {
+            return '<tr class="' + (i === idx ? "is-matched" : "") + '"><td>' + r.cm.toFixed(1) + '</td><td>' + r.inS + '</td><td>' + r.uk + '</td><td>' + r.us + '</td><td>' + r.eu + '</td><td>' + r.cn + '</td></tr>';
+          }).join("") + '</tbody></table></div>';
+      }
+
+      /* 15. Binary Computational Calculator (Exact BigInt) */
+      function binMask(w) { return (1n << BigInt(w)) - 1n; }
+      function binToSigned(u, w) {
+        var m = binMask(w), v = u & m, signBit = 1n << BigInt(w - 1);
+        return (v & signBit) ? (v - (1n << BigInt(w))) : v;
+      }
+      function groupBin(u, w) {
+        var s = (u & binMask(w)).toString(2).padStart(w, "0");
+        return s.replace(/(.{4})(?=.)/g, "$1 ");
+      }
+      function parseBaseBigInt(raw, base) {
+        var s = String(raw || "").trim().replace(/[\s_]/g, "");
+        if (!s) return { error: "Enter a value." };
+        var neg = false;
+        if (s[0] === "-") { neg = true; s = s.slice(1); }
+        else if (s[0] === "+") s = s.slice(1);
+        if (base === 2 && /^0b/i.test(s)) s = s.slice(2);
+        if (base === 16 && /^0x/i.test(s)) s = s.slice(2);
+        if (base === 8 && /^0o/i.test(s)) s = s.slice(2);
+        if (!s) return { error: "Enter digits after the prefix." };
+        var re = base === 2 ? /^[01]+$/ : base === 8 ? /^[0-7]+$/ : base === 10 ? /^[0-9]+$/ : /^[0-9a-fA-F]+$/;
+        if (!re.test(s)) {
+          var bName = base === 2 ? "binary (0–1)" : base === 8 ? "octal (0–7)" : base === 10 ? "decimal (0–9)" : "hexadecimal (0–9, A–F)";
+          return { error: "Invalid character for " + bName + "." };
+        }
+        var prefix = base === 2 ? "0b" : base === 8 ? "0o" : base === 16 ? "0x" : "";
+        var val = BigInt(prefix + s);
+        return { value: neg ? -val : val };
+      }
+      function binPopcount(u) {
+        var s = u.toString(2), c = 0;
+        for (var i = 0; i < s.length; i++) if (s[i] === "1") c++;
+        return c;
+      }
+      function baseSelectOpts(sel) {
+        return [[2, "Binary (2)"], [10, "Decimal (10)"], [16, "Hex (16)"], [8, "Octal (8)"]].map(function (b) {
+          return '<option value="' + b[0] + '" ' + (b[0] === sel ? "selected" : "") + '>' + b[1] + '</option>';
+        }).join("");
+      }
+
+      function renderBinary() {
+        var m = state.binaryMode, w = state.binaryWidth, sgn = state.binarySigned;
+        workspace.innerHTML =
+          '<section class="panel"><div class="panel-head"><div><h2>Binary computational calculator</h2><p>Exact BigInt arithmetic, bitwise logic, shifts, complements &amp; live bit pad.</p></div><span class="panel-code">BINARY · BITWISE</span></div>' +
+          '<div class="panel-body">' +
+            '<div class="mode-switch">' +
+              '<button class="mode-btn" type="button" data-action="bin-mode" data-mode="arith" aria-pressed="' + (m === "arith") + '">Arithmetic &amp; Bitwise</button>' +
+              '<button class="mode-btn" type="button" data-action="bin-mode" data-mode="conv" aria-pressed="' + (m === "conv") + '">Base Converter &amp; Bit Pad</button>' +
+            '</div>' +
+            '<div class="grid-2">' +
+              '<label><span class="flabel">Bit width</span><select id="binWidth" class="sel">' +
+                [8, 16, 32, 64].map(function (bw) { return '<option value="' + bw + '" ' + (bw === w ? "selected" : "") + '>' + bw + '-bit</option>'; }).join("") +
+              '</select></label>' +
+              (m === "arith"
+                ? '<label><span class="flabel">Signedness</span><select id="binSigned" class="sel"><option value="unsigned" ' + (sgn === "unsigned" ? "selected" : "") + '>Unsigned</option><option value="signed" ' + (sgn === "signed" ? "selected" : "") + '>Signed (2\'s Complement)</option></select></label>'
+                : '<label><span class="flabel">Interpretation</span><input class="inp" type="text" readonly value="2\'s Complement &amp; Unsigned"></label>'
+              ) +
+            '</div>' +
+            (m === "arith"
+              ? '<div class="grid-2">' +
+                  '<label><span class="flabel">Operand A</span><input id="binA" class="inp num" type="text" value="101101" autocomplete="off" spellcheck="false"></label>' +
+                  '<label><span class="flabel">Operand A base</span><select id="binABase" class="sel">' + baseSelectOpts(2) + '</select></label>' +
+                  '<label class="span-full"><span class="flabel">Operation</span><select id="binOp" class="sel">' +
+                    '<optgroup label="Arithmetic"><option value="add">Add (+)</option><option value="sub">Subtract (−)</option><option value="mul">Multiply (×)</option><option value="div">Divide (÷)</option><option value="mod">Modulo (%)</option></optgroup>' +
+                    '<optgroup label="Bitwise Logic"><option value="and">AND (&amp;)</option><option value="or">OR (|)</option><option value="xor">XOR (^)</option><option value="nand">NAND</option><option value="nor">NOR</option><option value="xnor">XNOR</option><option value="not">NOT (~A)</option></optgroup>' +
+                    '<optgroup label="Shifts &amp; Rotates"><option value="shl">Left Shift (&lt;&lt;)</option><option value="shr">Logical Right Shift (&gt;&gt;&gt;)</option><option value="sar">Arithmetic Right Shift (&gt;&gt;)</option><option value="rol">Rotate Left (ROL)</option><option value="ror">Rotate Right (ROR)</option></optgroup>' +
+                    '<optgroup label="Complements"><option value="ones">1\'s Complement (~A)</option><option value="twos">2\'s Complement (−A)</option></optgroup>' +
+                  '</select></label>' +
+                  '<label id="binBWrap"><span id="binBLabel" class="flabel">Operand B</span><input id="binB" class="inp num" type="text" value="010110" autocomplete="off" spellcheck="false"></label>' +
+                  '<label id="binBBaseWrap"><span class="flabel">Operand B base</span><select id="binBBase" class="sel">' + baseSelectOpts(2) + '</select></label>' +
+                '</div>' +
+                '<div class="result-box-row"><div><span class="rlabel">Binary result (<span id="binResBits">' + w + '</span>-bit)</span><div id="binaryResult" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy result</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+                '<div id="binFlags" class="bin-flags" aria-label="CPU status flags"></div>' +
+                '<div id="binCards" class="grid-3"></div>' +
+                '<div id="binAlign" class="bin-align" aria-label="Bit-by-bit visual alignment"></div>' +
+                '<p id="binError" class="formula hidden" role="alert"></p>'
+              : '<div class="grid-2">' +
+                  '<label><span class="flabel">Binary (Base 2)</span><input id="binConvBin" class="inp num" type="text" autocomplete="off" spellcheck="false"></label>' +
+                  '<label><span class="flabel">Decimal (Base 10)</span><input id="binConvDec" class="inp num" type="text" autocomplete="off" spellcheck="false"></label>' +
+                  '<label><span class="flabel">Hexadecimal (Base 16)</span><input id="binConvHex" class="inp num" type="text" autocomplete="off" spellcheck="false"></label>' +
+                  '<label><span class="flabel">Octal (Base 8)</span><input id="binConvOct" class="inp num" type="text" autocomplete="off" spellcheck="false"></label>' +
+                '</div>' +
+                '<div class="result-box-row"><div><span class="rlabel">Grouped binary (' + w + '-bit)</span><div id="binaryResult" class="rval">—</div></div><div class="actions"><button class="btn" data-action="copy">Copy</button><button class="btn" data-action="save-calc">Save</button></div></div>' +
+                '<div id="binConvCards" class="grid-3"></div>' +
+                '<p id="binConvError" class="formula hidden" role="alert"></p>' +
+                '<div><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px"><span class="flabel">Interactive Bit Toggle Pad</span>' +
+                  '<div class="actions">' +
+                    '<button class="btn btn-text" type="button" data-action="bin-util" data-util="clear">Clear (0)</button>' +
+                    '<button class="btn btn-text" type="button" data-action="bin-util" data-util="all1">All 1s</button>' +
+                    '<button class="btn btn-text" type="button" data-action="bin-util" data-util="inv">Invert (~)</button>' +
+                    '<button class="btn btn-text" type="button" data-action="bin-util" data-util="shl">&lt;&lt;1</button>' +
+                    '<button class="btn btn-text" type="button" data-action="bin-util" data-util="shr">&gt;&gt;1</button>' +
+                  '</div></div>' +
+                  '<div id="bitPadGrid" class="bit-pad"></div>' +
+                  '<p id="bitPadNote" class="fhelp" style="margin-top:6px"></p>' +
+                '</div>'
+            ) +
+          '</div></section>' +
+          '<aside class="panel"><div class="panel-head"><div><h2>How binary computation works</h2><p>Bit-width masking, Two\'s Complement &amp; logic gates.</p></div></div>' +
+          '<div class="panel-body">' +
+            '<p>All results are computed with exact <strong>BigInt</strong> precision and masked to your selected width (8, 16, 32, or 64 bits). In <strong>Two\'s Complement</strong>, the highest bit represents −2<sup>n−1</sup>, and −A equals (~A) + 1.</p>' +
+            '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>A</th><th>B</th><th>AND</th><th>OR</th><th>XOR</th><th>NAND</th><th>NOR</th><th>XNOR</th></tr></thead><tbody>' +
+              '<tr><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td><td class="mono">1</td><td class="mono">1</td><td class="mono">1</td></tr>' +
+              '<tr><td class="mono">0</td><td class="mono">1</td><td class="mono">0</td><td class="mono">1</td><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td><td class="mono">0</td></tr>' +
+              '<tr><td class="mono">1</td><td class="mono">0</td><td class="mono">0</td><td class="mono">1</td><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td><td class="mono">0</td></tr>' +
+              '<tr><td class="mono">1</td><td class="mono">1</td><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td><td class="mono">1</td></tr>' +
+            '</tbody></table></div>' +
+            '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Power</th><th>Decimal</th><th>Hex</th></tr></thead><tbody>' +
+              '<tr><td class="mono">2⁰</td><td class="mono">1</td><td class="mono">0x1</td></tr>' +
+              '<tr><td class="mono">2⁴</td><td class="mono">16</td><td class="mono">0x10</td></tr>' +
+              '<tr><td class="mono">2⁸</td><td class="mono">256</td><td class="mono">0x100</td></tr>' +
+              '<tr><td class="mono">2¹²</td><td class="mono">4,096</td><td class="mono">0x1000</td></tr>' +
+              '<tr><td class="mono">2¹⁶</td><td class="mono">65,536</td><td class="mono">0x10000</td></tr>' +
+              '<tr><td class="mono">2³²</td><td class="mono">4,294,967,296</td><td class="mono">0x100000000</td></tr>' +
+            '</tbody></table></div>' +
+          '</div></aside>';
+
+        if (m === "arith") calcBinaryArith();
+        else syncBinaryConv(null);
+      }
+
+      function calcBinaryArith() {
+        if (!$("binA")) return;
+        var w = Number($("binWidth").value) || 8;
+        var signed = $("binSigned").value === "signed";
+        state.binaryWidth = w; state.binarySigned = $("binSigned").value;
+        var op = $("binOp").value;
+        var isUnary = ["not", "ones", "twos"].includes(op);
+        var isShift = ["shl", "shr", "sar", "rol", "ror"].includes(op);
+        $("binBWrap").classList.toggle("hidden", isUnary);
+        $("binBBaseWrap").classList.toggle("hidden", isUnary);
+        $("binB").disabled = isUnary; $("binBBase").disabled = isUnary;
+        $("binBLabel").textContent = isShift ? "Shift count (bits)" : "Operand B";
+        $("binResBits").textContent = String(w);
+
+        var pA = parseBaseBigInt($("binA").value, Number($("binABase").value));
+        var pB = isUnary ? { value: 0n } : parseBaseBigInt($("binB").value, Number($("binBBase").value));
+        var err = pA.error ? ("Operand A: " + pA.error) : pB.error ? ((isShift ? "Shift count: " : "Operand B: ") + pB.error) : "";
+
+        var mask = binMask(w), bw = BigInt(w), signBit = 1n << (bw - 1n);
+        var uA = 0n, uB = 0n, uRes = 0n, remStr = "—", carryOrOverflow = false, opSym = "";
+
+        if (!err) {
+          uA = pA.value & mask;
+          uB = pB.value & mask;
+          var sA = binToSigned(uA, w), sB = binToSigned(uB, w);
+          var vA = signed ? sA : uA, vB = signed ? sB : uB;
+
+          if (op === "add") {
+            opSym = "+";
+            var rawAdd = vA + vB;
+            uRes = rawAdd & mask;
+            carryOrOverflow = signed
+              ? (((uA & signBit) === (uB & signBit)) && ((uRes & signBit) !== (uA & signBit)))
+              : (uA + uB > mask);
+          } else if (op === "sub") {
+            opSym = "−";
+            var rawSub = vA - vB;
+            uRes = rawSub & mask;
+            carryOrOverflow = signed
+              ? (((uA & signBit) !== (uB & signBit)) && ((uRes & signBit) !== (uA & signBit)))
+              : (uA < uB);
+          } else if (op === "mul") {
+            opSym = "×";
+            var rawMul = vA * vB;
+            uRes = rawMul & mask;
+            carryOrOverflow = signed
+              ? (rawMul < -(1n << (bw - 1n)) || rawMul > (1n << (bw - 1n)) - 1n)
+              : (rawMul > mask);
+          } else if (op === "div" || op === "mod") {
+            opSym = op === "div" ? "÷" : "%";
+            if (vB === 0n) { err = "Division or modulo by zero is undefined."; }
+            else {
+              var q = vA / vB, rm = vA % vB;
+              uRes = (op === "div" ? q : rm) & mask;
+              if (op === "div") remStr = String(rm) + " (0b" + (rm & mask).toString(2) + ")";
+              carryOrOverflow = signed && (vA === -(1n << (bw - 1n)) && vB === -1n);
+            }
+          } else if (op === "and") { opSym = "&"; uRes = (uA & uB) & mask; }
+          else if (op === "or") { opSym = "|"; uRes = (uA | uB) & mask; }
+          else if (op === "xor") { opSym = "^"; uRes = (uA ^ uB) & mask; }
+          else if (op === "nand") { opSym = "NAND"; uRes = (~(uA & uB)) & mask; }
+          else if (op === "nor") { opSym = "NOR"; uRes = (~(uA | uB)) & mask; }
+          else if (op === "xnor") { opSym = "XNOR"; uRes = (~(uA ^ uB)) & mask; }
+          else if (op === "not" || op === "ones") { opSym = "~"; uRes = (~uA) & mask; }
+          else if (op === "twos") {
+            opSym = "−";
+            uRes = ((~uA) + 1n) & mask;
+            carryOrOverflow = signed && (uA === signBit);
+          } else if (isShift) {
+            if (pB.value < 0n) { err = "Shift count must be zero or positive."; }
+            else {
+              var sh = pB.value;
+              if (op === "shl") {
+                opSym = "<<";
+                uRes = sh >= bw ? 0n : ((uA << sh) & mask);
+                carryOrOverflow = sh > 0n && sh <= bw && ((uA >> (bw - sh)) !== 0n);
+              } else if (op === "shr") {
+                opSym = ">>>";
+                uRes = sh >= bw ? 0n : (uA >> sh);
+                carryOrOverflow = sh > 0n && ((uA & ((1n << (sh > bw ? bw : sh)) - 1n)) !== 0n);
+              } else if (op === "sar") {
+                opSym = ">>";
+                var shC = sh >= bw ? (bw - 1n) : sh;
+                uRes = (binToSigned(uA, w) >> shC) & mask;
+              } else if (op === "rol") {
+                opSym = "ROL";
+                var rL = sh % bw;
+                uRes = rL === 0n ? uA : (((uA << rL) | (uA >> (bw - rL))) & mask);
+              } else if (op === "ror") {
+                opSym = "ROR";
+                var rR = sh % bw;
+                uRes = rR === 0n ? uA : (((uA >> rR) | (uA << (bw - rR))) & mask);
+              }
+            }
+          }
+        }
+
+        $("binError").textContent = err;
+        $("binError").classList.toggle("hidden", !err);
+        if (err) {
+          $("binaryResult").textContent = "—";
+          $("binFlags").innerHTML = "";
+          $("binCards").innerHTML = "";
+          $("binAlign").innerHTML = "";
+          return;
+        }
+
+        var sRes = binToSigned(uRes, w);
+        var groupedRes = groupBin(uRes, w);
+        var hexPad = Math.ceil(w / 4);
+        var isZero = uRes === 0n;
+        var isNeg = (uRes & signBit) !== 0n;
+
+        $("binaryResult").textContent = groupedRes;
+        $("binFlags").innerHTML =
+          '<span class="bin-flag ' + (isZero ? "is-on" : "") + '"><span class="fdot"></span>ZERO (' + (isZero ? "1" : "0") + ')</span>' +
+          '<span class="bin-flag ' + (isNeg ? "is-on" : "") + '"><span class="fdot"></span>NEGATIVE / MSB (' + (isNeg ? "1" : "0") + ')</span>' +
+          '<span class="bin-flag is-warn ' + (carryOrOverflow ? "is-on" : "") + '"><span class="fdot"></span>' + (signed ? "OVERFLOW" : "CARRY / LOSS") + ' (' + (carryOrOverflow ? "1" : "0") + ')</span>';
+
+        $("binCards").innerHTML =
+          '<div class="stat-card"><span>Decimal (Unsigned)</span><strong>' + uRes.toString(10) + '</strong></div>' +
+          '<div class="stat-card"><span>Decimal (Signed)</span><strong>' + sRes.toString(10) + '</strong></div>' +
+          '<div class="stat-card"><span>Hexadecimal</span><strong>0x' + uRes.toString(16).toUpperCase().padStart(hexPad, "0") + '</strong></div>' +
+          '<div class="stat-card"><span>Octal</span><strong>0o' + uRes.toString(8) + '</strong></div>' +
+          '<div class="stat-card"><span>Bit Stats</span><strong>' + binPopcount(uRes) + ' set</strong><small>Bit length: ' + (uRes === 0n ? 1 : uRes.toString(2).length) + '</small></div>' +
+          '<div class="stat-card"><span>Remainder</span><strong>' + esc(remStr) + '</strong></div>';
+
+        var rowB = isUnary
+          ? '<div class="bin-align-row"><span class="bin-align-lbl">Op (' + esc(opSym) + ')</span><span class="bin-align-bits" style="color:#9ca3af">Unary (' + w + '-bit)</span></div>'
+          : isShift
+            ? '<div class="bin-align-row"><span class="bin-align-lbl">' + esc(opSym) + ' bits</span><span class="bin-align-bits">' + esc(pB.value.toString(10)) + ' bit(s)</span></div>'
+            : '<div class="bin-align-row"><span class="bin-align-lbl">' + esc(opSym) + ' B</span><span class="bin-align-bits">' + esc(groupBin(uB, w)) + '</span></div>';
+
+        $("binAlign").innerHTML =
+          '<div class="bin-align-row"><span class="bin-align-lbl">  A</span><span class="bin-align-bits">' + esc(groupBin(uA, w)) + '</span></div>' +
+          rowB +
+          '<hr class="bin-align-sep">' +
+          '<div class="bin-align-row bin-align-res"><span class="bin-align-lbl">  =</span><span class="bin-align-bits">' + esc(groupedRes) + '</span></div>';
+      }
+
+      function syncBinaryConv(sourceId) {
+        if (!$("binConvBin")) return;
+        var w = Number($("binWidth").value) || 8;
+        state.binaryWidth = w;
+        var mask = binMask(w);
+        var err = "";
+
+        if (sourceId) {
+          var baseMap = { binConvBin: 2, binConvDec: 10, binConvHex: 16, binConvOct: 8 };
+          var parsed = parseBaseBigInt($(sourceId).value, baseMap[sourceId]);
+          if (parsed.error) err = parsed.error;
+          else state.binaryConvVal = parsed.value & mask;
+        } else {
+          state.binaryConvVal = state.binaryConvVal & mask;
+        }
+
+        $("binConvError").textContent = err;
+        $("binConvError").classList.toggle("hidden", !err);
+        if (err) { $("binaryResult").textContent = "—"; return; }
+
+        var u = state.binaryConvVal & mask;
+        if (sourceId !== "binConvBin") $("binConvBin").value = u.toString(2);
+        if (sourceId !== "binConvDec") $("binConvDec").value = u.toString(10);
+        if (sourceId !== "binConvHex") $("binConvHex").value = u.toString(16).toUpperCase();
+        if (sourceId !== "binConvOct") $("binConvOct").value = u.toString(8);
+
+        var ones = (~u) & mask;
+        var twos = ((~u) + 1n) & mask;
+        var signedVal = binToSigned(u, w);
+        var ascii = (u >= 32n && u <= 126n) ? ("'" + String.fromCharCode(Number(u)) + "'") : "Non-printable";
+
+        $("binaryResult").textContent = groupBin(u, w);
+        $("binConvCards").innerHTML =
+          '<div class="stat-card"><span>Signed (' + w + '-bit)</span><strong>' + signedVal.toString(10) + '</strong></div>' +
+          '<div class="stat-card"><span>1\'s Complement</span><strong>' + esc(groupBin(ones, Math.min(w, 16))) + (w > 16 ? "…" : "") + '</strong><small>0x' + ones.toString(16).toUpperCase() + '</small></div>' +
+          '<div class="stat-card"><span>2\'s Complement</span><strong>' + esc(groupBin(twos, Math.min(w, 16))) + (w > 16 ? "…" : "") + '</strong><small>0x' + twos.toString(16).toUpperCase() + '</small></div>' +
+          '<div class="stat-card"><span>ASCII (32–126)</span><strong>' + esc(ascii) + '</strong></div>' +
+          '<div class="stat-card"><span>Popcount</span><strong>' + binPopcount(u) + ' / ' + w + '</strong></div>' +
+          '<div class="stat-card"><span>Bit Length</span><strong>' + (u === 0n ? 1 : u.toString(2).length) + ' bits</strong></div>';
+
+        renderBitPad(u, w);
+      }
+
+      function renderBitPad(u, w) {
+        var grid = $("bitPadGrid"); if (!grid) return;
+        var padBits = Math.min(w, 16);
+        var html = "";
+        for (var i = padBits - 1; i >= 0; i--) {
+          var on = ((u >> BigInt(i)) & 1n) === 1n;
+          var wt = (1n << BigInt(i)).toString(10);
+          html += '<button type="button" class="bit-tile ' + (on ? "is-on" : "") + '" data-action="bin-toggle-bit" data-bit="' + i + '" aria-pressed="' + on + '">' +
+            '<span class="bit-idx">b' + i + '</span><span class="bit-val">' + (on ? "1" : "0") + '</span><span class="bit-wt">' + wt + '</span></button>';
+        }
+        grid.innerHTML = html;
+        $("bitPadNote").textContent = w > 16
+          ? "Showing lower 16 bits (b15–b0) for interactive toggling; upper bits of your " + w + "-bit value are preserved."
+          : "Click any bit tile to toggle 0/1 and update Binary, Decimal, Hex, and Octal live.";
+      }
+
+      function handleBinaryInput(e) {
+        var id = e.target.id;
+        if (state.binaryMode === "arith") {
+          calcBinaryArith();
+        } else {
+          if (id === "binWidth") syncBinaryConv(null);
+          else if (["binConvBin", "binConvDec", "binConvHex", "binConvOct"].includes(id)) syncBinaryConv(id);
+        }
+      }
+      function toggleFavorite(id) {
+        var target = id || state.activeTool;
+        var exists = state.favorites.includes(target);
+        state.favorites = exists
+          ? state.favorites.filter(function (x) { return x !== target; })
+          : [target].concat(state.favorites);
+        saveStored("ic-favorites", state.favorites);
+        updateHeader();
+        renderNav();
+        showToast(exists ? "Removed from saved tools." : "Added to saved tools.");
+      }
+
+      /* Event Delegation */
+      workspace.addEventListener("input", function (e) {
+        var t = activeTool(), id = e.target.id;
+        if (t.kind === "units") calcUnits(t);
+        else if (t.kind === "custom") calcCustom();
+        else if (t.kind === "currency") { calcFx(); if (id === "currencyFrom" || id === "currencyTo") loadFxHistory(); }
+        else if (t.kind === "metals") { if (id === "metalCode") { loadMetalSpot(); loadMetalHistory(); } else calcMetal(); }
+        else if (t.kind === "index") calcIndex();
+        else if (t.kind === "credit-card") calcCreditCard();
+        else if (t.kind === "interest") calcInterest();
+        else if (t.kind === "emi") calcEmi();
+        else if (t.kind === "bmi") calcBmi();
+        else if (t.kind === "clothing-size") { if (id === "clSec" || id === "clFromStd") populateClothingSelect(); calcClothingSize(); }
+        else if (t.kind === "shoe-size") { if (id === "shSec" || id === "shFromStd") populateShoeSelect(); calcShoeSize(); }
+        else if (t.kind === "binary") handleBinaryInput(e);
+      });
+
+      workspace.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-action]"); if (!btn) return;
+        var a = btn.dataset.action;
+        if (a === "calc") calcKey(btn.dataset.key);
+        else if (a === "copy") copyActiveResult();
+        else if (a === "save-calc") saveCalculation();
+        else if (a === "swap-units") {
+          var f = $("fromUnit"), to = $("toUnit"), am = $("unitAmount"), r = $("unitResult");
+          if (f && to && am && r && r.dataset.raw) { am.value = r.dataset.raw; var tmp = f.value; f.value = to.value; to.value = tmp; calcUnits(activeTool()); }
+        } else if (a === "toggle-work") {
+          var wc = $("workingContent"); var open = wc.classList.toggle("is-open");
+          btn.setAttribute("aria-expanded", String(open)); btn.querySelector("span:last-child").textContent = open ? "−" : "＋";
+        } else if (a === "new-challenge") renderChallenge(activeTool());
+        else if (a === "reveal-challenge" && state.challenge) {
+          $("challengeAnswer").textContent = "Answer: " + state.challenge.answer;
+          $("challengeAnswer").classList.remove("hidden"); btn.disabled = true;
+        } else if (a === "swap-custom") {
+          var k = Number($("customFactor").value), amC = Number($("customAmount").value);
+          if (k > 0 && Number.isFinite(amC)) {
+            var tf = $("customFrom").value; $("customFrom").value = $("customTo").value; $("customTo").value = tf;
+            $("customAmount").value = String(amC * k); $("customFactor").value = String(1 / k); calcCustom();
+          }
+        } else if (a === "mile-example") {
+          $("customAmount").value = "5"; $("customFrom").value = "mile"; $("customTo").value = "kilometer"; $("customFactor").value = "1.609344"; calcCustom();
+        } else if (a === "save-pair") {
+          calcCustom(); if ($("customError").textContent) return;
+          state.customConversions = [{ id: String(Date.now()), from: $("customFrom").value.trim(), to: $("customTo").value.trim(), factor: Number($("customFactor").value) }].concat(state.customConversions).slice(0, 30);
+          saveStored("ic-custom", state.customConversions); renderCustomPairs(); showToast("Unit pair saved.");
+        } else if (a === "use-pair") {
+          var p = state.customConversions.find(function (x) { return x.id === btn.dataset.id; });
+          if (p) { $("customFrom").value = p.from; $("customTo").value = p.to; $("customFactor").value = String(p.factor); calcCustom(); }
+        } else if (a === "del-pair") {
+          state.customConversions = state.customConversions.filter(function (x) { return x.id !== btn.dataset.id; });
+          saveStored("ic-custom", state.customConversions); renderCustomPairs();
+        } else if (a === "open-hist") {
+          var h = state.history.find(function (x) { return x.id === btn.dataset.id; });
+          if (h) {
+            setTool(h.toolId);
+            (h.values || []).forEach(function (item) { var c = $(item.id); if (c) { c.value = item.value; c.dispatchEvent(new Event("input", { bubbles: true })); } });
+            showToast("Saved inputs restored.");
+          }
+        } else if (a === "del-hist") {
+          state.history = state.history.filter(function (x) { return x.id !== btn.dataset.id; });
+          saveStored("ic-history", state.history); renderHistory();
+        } else if (a === "clear-history") {
+          state.history = []; saveStored("ic-history", []); renderHistory(); showToast("History cleared.");
+        } else if (a === "swap-fx") {
+          var fS = $("currencyFrom"), tS = $("currencyTo"), amF = $("currencyAmount"), rF = $("currencyResult");
+          if (fS && tS) { if (rF && rF.dataset.raw) amF.value = rF.dataset.raw; var tmpF = fS.value; fS.value = tS.value; tS.value = tmpF; calcFx(); loadFxHistory(); }
+        } else if (a === "refresh-fx") loadFx(true).then(calcFx);
+        else if (a === "fx-range") { state.fxHistoryRange = btn.dataset.range; loadFxHistory(); }
+        else if (a === "refresh-metal") loadMetalSpot(true);
+        else if (a === "metal-range") { state.metalHistoryRange = btn.dataset.range; loadMetalHistory(); }
+        else if (a === "cloth-mode") { state.clothingMode = btn.dataset.mode; renderClothingSize(); }
+        else if (a === "shoe-mode") { state.shoeMode = btn.dataset.mode; renderShoeSize(); }
+        else if (a === "bin-mode") { state.binaryMode = btn.dataset.mode; renderBinary(); }
+        else if (a === "bin-toggle-bit") {
+          var bit = BigInt(btn.dataset.bit);
+          state.binaryConvVal = (state.binaryConvVal ^ (1n << bit)) & binMask(state.binaryWidth);
+          syncBinaryConv(null);
+        } else if (a === "bin-util") {
+          var uAct = btn.dataset.util, msk = binMask(state.binaryWidth);
+          if (uAct === "clear") state.binaryConvVal = 0n;
+          else if (uAct === "all1") state.binaryConvVal = msk;
+          else if (uAct === "inv") state.binaryConvVal = (~state.binaryConvVal) & msk;
+          else if (uAct === "shl") state.binaryConvVal = (state.binaryConvVal << 1n) & msk;
+          else if (uAct === "shr") state.binaryConvVal = (state.binaryConvVal >> 1n) & msk;
+          syncBinaryConv(null);
+        }
+      });
+
+      toolNav.addEventListener("click", function (e) {
+        var fav = e.target.closest("[data-favorite-tool]");
+        if (fav) { toggleFavorite(fav.dataset.favoriteTool); return; }
+        var btn = e.target.closest("[data-tool]");
+        if (btn) { setTool(btn.dataset.tool); closeDrawer(false); }
+      });
+
+      categoryNav.addEventListener("click", function (e) {
+        var allBtn = e.target.closest("[data-all-tools]");
+        if (allBtn) {
+          if (state.drawerOpen && state.drawerShowAll && !state.drawerPinned) closeDrawer(false);
+          else openDrawer({ showAll: true });
+          return;
+        }
+        var catBtn = e.target.closest("[data-category]");
+        if (!catBtn) return;
+        var cat = catBtn.dataset.category;
+        if (state.drawerOpen && !state.drawerShowAll && state.activeCategory === cat && !state.drawerPinned) {
+          closeDrawer(false);
+        } else {
+          openDrawer({ category: cat, showAll: false });
+        }
+      });
+
+      var catBarShell = $("categoryBarShell");
+      categoryNav.addEventListener("mouseover", function (e) {
+        if (window.matchMedia && !window.matchMedia("(hover: hover)").matches) return;
+        var allBtn = e.target.closest("[data-all-tools]");
+        var catBtn = e.target.closest("[data-category]");
+        if (!allBtn && !catBtn) return;
+        clearTimeout(state.leaveTimer);
+        clearTimeout(state.hoverTimer);
+        state.hoverTimer = setTimeout(function () {
+          if (allBtn) openDrawer({ showAll: true });
+          else if (catBtn) openDrawer({ category: catBtn.dataset.category, showAll: false });
+        }, 120);
+      });
+
+      catBarShell.addEventListener("mouseenter", function () {
+        clearTimeout(state.leaveTimer);
+      });
+      catBarShell.addEventListener("mouseleave", function () {
+        if (state.drawerPinned) return;
+        clearTimeout(state.hoverTimer);
+        state.leaveTimer = setTimeout(function () { closeDrawer(false); }, 180);
+      });
+
+      $("browseAllButton").addEventListener("click", function () {
+        if (state.drawerOpen && state.drawerShowAll && !state.drawerPinned) closeDrawer(false);
+        else openDrawer({ showAll: true });
+      });
+      $("drawerAllToggle").addEventListener("click", function () { state.drawerShowAll = !state.drawerShowAll; renderNav(); });
+      $("drawerPrev").addEventListener("click", function () {
+        var g = getGroups(false), i = g.findIndex(function (x) { return x.name === state.activeCategory; });
+        if (i > 0) { state.activeCategory = g[i - 1].name; renderNav(); }
+      });
+      $("drawerNext").addEventListener("click", function () {
+        var g = getGroups(false), i = g.findIndex(function (x) { return x.name === state.activeCategory; });
+        if (i >= 0 && i < g.length - 1) { state.activeCategory = g[i + 1].name; renderNav(); }
+      });
+      $("drawerIndicators").addEventListener("click", function (e) {
+        var dot = e.target.closest("[data-slide-index]"); if (!dot) return;
+        var g = getGroups(false), idx = Number(dot.dataset.slideIndex);
+        if (g[idx]) { state.activeCategory = g[idx].name; state.drawerShowAll = false; renderNav(); }
+      });
+      $("drawerPinBtn").addEventListener("click", function () { state.drawerPinned = !state.drawerPinned; if (state.drawerPinned) state.drawerOpen = true; syncDrawer(); });
+      $("drawerCloseBtn").addEventListener("click", function () { closeDrawer(true); });
+      drawerBackdrop.addEventListener("click", function () { closeDrawer(false); });
+
+      /* Touch & Pointer Horizontal Swipe on Overlay Track */
+      var swX = 0, swY = 0, swActive = false;
+      $("drawerViewport").addEventListener("touchstart", function (e) {
+        if (state.drawerShowAll || state.search.trim()) return;
+        swX = e.touches[0].clientX; swY = e.touches[0].clientY; swActive = true;
+      }, { passive: true });
+      $("drawerViewport").addEventListener("touchend", function (e) {
+        if (!swActive) return; swActive = false;
+        var dx = e.changedTouches[0].clientX - swX, dy = e.changedTouches[0].clientY - swY;
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0) $("drawerNext").click(); else $("drawerPrev").click();
+        }
+      }, { passive: true });
+
+      $("toolSearch").addEventListener("input", function (e) {
+        state.search = e.target.value;
+        if (state.search.trim()) openDrawer();
+        else renderNav();
+      });
+      $("toolSearch").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          var first = toolNav.querySelector("[data-tool]");
+          if (first) { setTool(first.dataset.tool); closeDrawer(false); }
+        }
+      });
+
+      $("brandHome").addEventListener("click", function () { setTool("calculator"); closeDrawer(false); });
+      $("favoriteButton").addEventListener("click", function () { toggleFavorite(); });
+      $("recentTools").addEventListener("click", function (e) { var b = e.target.closest("[data-tool]"); if (b) setTool(b.dataset.tool); });
+      $("clearRecent").addEventListener("click", function () { state.recent = []; saveStored("ic-recent", []); renderRecent(); showToast("Recent cleared."); });
+      $("dismissRuntimeError").addEventListener("click", function () { $("runtimeErrorBanner").classList.add("hidden"); });
+
+      document.addEventListener("keydown", function (e) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("toolSearch").focus(); return; }
+        if (e.key === "Escape" && state.drawerOpen && !state.drawerPinned) { closeDrawer(false); return; }
+        if (activeTool().kind === "calculator" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          if (e.target && e.target.closest("input, select, textarea, button")) return;
+          var map = { Enter: "=", "=": "=", Backspace: "del", Escape: "clear", "%": "pct", ".": ".", "+": "+", "-": "-", "*": "*", "/": "/" };
+          var k = /^\d$/.test(e.key) ? e.key : map[e.key];
+          if (k) { e.preventDefault(); calcKey(k); }
+        }
+      });
+
+      renderNav();
+      renderRecent();
+      setTool("calculator", false);
+    } catch (err) {
+      showRuntimeError(err);
+    }
+  })();
+  </script>
+</body>
+</html>
